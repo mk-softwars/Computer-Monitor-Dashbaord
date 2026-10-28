@@ -19,10 +19,10 @@ const thresholdLabels: Record<string, string> = {
 }
 
 const transparencyLevels = [
-  { label: 'High', opacity: .28 },
-  { label: 'Medium', opacity: .55 },
-  { label: 'Low', opacity: .78 },
-  { label: 'None', opacity: .94 },
+  { label: 'High', percent: 75, opacity: .25 },
+  { label: 'Medium', percent: 50, opacity: .5 },
+  { label: 'Low', percent: 25, opacity: .75 },
+  { label: 'None', percent: 0, opacity: 1 },
 ]
 
 function closestTransparencyOpacity(opacity: number) {
@@ -116,8 +116,9 @@ export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPan
             <select value={closestTransparencyOpacity(draft.display.opacity)}
               onChange={e => updateDisplay({ opacity: Number(e.target.value), panelTransparent: false })}>
               {transparencyLevels.map(level =>
-                <option value={level.opacity} key={level.label}>{level.label}</option>)}
+                <option value={level.opacity} key={level.label}>{level.label} — {level.percent}%</option>)}
             </select>
+            <output>{Math.round((1 - closestTransparencyOpacity(draft.display.opacity)) * 100)}%</output>
           </label>
           <label className="setting-row setting-row--slider">
             <span><strong>Text size</strong><small>Scale compact telemetry values</small></span>

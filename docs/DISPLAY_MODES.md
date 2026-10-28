@@ -23,11 +23,11 @@ opacity, locking, and always-on-top remain available.
 Right-click the widget or use the system tray to change mode, opacity,
 always-on-top, lock, click-through, or exit the application.
 
-The Display Mode settings include clear **Panel transparency** levels: None,
-Low, Medium, and High. Only the glass panel background fades, so telemetry
-labels and values remain crisp and readable. Selecting a level disables the
-conflicting text-only override. Text-only mode remains available when the
-panel background should be removed completely.
+The Display Mode settings include clear **Panel transparency** percentages:
+None (0%), Low (25%), Medium (50%), and High (75%). Only the glass panel
+background fades, so telemetry labels and values remain crisp and readable.
+Selecting a level disables the conflicting text-only override. Text-only mode
+remains available when the panel background should be removed completely.
 
 ## Desktop background widget
 
@@ -51,7 +51,9 @@ Locking it or enabling click-through prevents accidental focus afterward.
 When click-through is enabled, input passes to windows below the widget.
 It takes effect after **Save settings**. The Settings button remains interactive
 and opens an interactive settings panel; all other widget regions continue to
-pass clicks through. Disable click-through from Settings, the tray menu, or
+pass clicks through. Click-through is limited to widget modes; the full
+dashboard and all of its controls remain interactive. Disable click-through
+from Settings, the tray menu, or
 press **Ctrl+Shift+F10**. The shortcut also unlocks and shows the widget, so
 settings and Exit always remain accessible.
 

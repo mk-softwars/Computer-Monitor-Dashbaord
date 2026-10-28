@@ -133,7 +133,7 @@ function showDashboard() {
 
 function setPointerPassthrough(passthrough: boolean) {
   if (!mainWindow) return
-  const ignoreMouse = displayState.clickThrough && passthrough
+  const ignoreMouse = displayState.mode !== 'full' && displayState.clickThrough && passthrough
   mainWindow.setIgnoreMouseEvents(ignoreMouse, { forward: true })
   mainWindow.setFocusable(!ignoreMouse)
 }
@@ -191,10 +191,10 @@ function buildControlMenu() {
     {
       label: 'Transparency',
       submenu: [
-        { label: 'High', opacity: .28 },
-        { label: 'Medium', opacity: .55 },
-        { label: 'Low', opacity: .78 },
-        { label: 'None', opacity: .94 },
+        { label: 'High — 75%', opacity: .25 },
+        { label: 'Medium — 50%', opacity: .5 },
+        { label: 'Low — 25%', opacity: .75 },
+        { label: 'None — 0%', opacity: 1 },
       ].map(level => ({
         label: level.label,
         type: 'radio' as const,
