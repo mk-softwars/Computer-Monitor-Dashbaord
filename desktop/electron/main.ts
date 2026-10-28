@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, shell, Tray } from 'electron'
 import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
@@ -7,9 +7,45 @@ import path from 'node:path'
 
 let mainWindow: BrowserWindow | null = null
 let monitor: ChildProcessWithoutNullStreams | null = null
+let tray: Tray | null = null
 let endpoint: string | null = null
 let screenshotCaptured = false
+let minimizeToTray = false
 const sessionToken = randomBytes(32).toString('hex')
+
+app.setAppUserModelId('app.computermonitor.dashboard')
+
+function showDashboard() {
+  if (!mainWindow) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+}
+
+function setTrayEnabled(enabled: boolean) {
+  if (!enabled) {
+    tray?.destroy()
+    tray = null
+    minimizeToTray = false
+    return false
+  }
+  if (tray) return true
+  const packagedIcon = path.join(__dirname, '../dist/app-icon.png')
+  const developmentIcon = path.resolve(__dirname, '../public/app-icon.png')
+  const icon = nativeImage.createFromPath(app.isPackaged ? packagedIcon : developmentIcon)
+  tray = new Tray(icon.resize({ width: 20, height: 20 }))
+  tray.setToolTip('Computer Monitor Dashboard')
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Open Dashboard', click: showDashboard },
+    { type: 'separator' },
+    {
+      label: 'Exit',
+      click: () => app.quit(),
+    },
+  ]))
+  tray.on('double-click', showDashboard)
+  return true
+}
 
 function captureDashboardIfRequested() {
   const target = process.env.DASHBOARD_SCREENSHOT_PATH
@@ -82,6 +118,10 @@ function createWindow() {
   })
 
   mainWindow.once('ready-to-show', () => mainWindow?.show())
+  mainWindow.on('minimize', () => {
+    if (!minimizeToTray) return
+    mainWindow?.hide()
+  })
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https://')) void shell.openExternal(url)
     return { action: 'deny' }
@@ -109,13 +149,30 @@ ipcMain.handle('window:setFullscreen', (_event, enabled: boolean) => {
   mainWindow?.setFullScreen(enabled)
   return mainWindow?.isFullScreen() ?? false
 })
+ipcMain.handle('desktop:setTrayEnabled', (_event, enabled: boolean) => setTrayEnabled(enabled))
+ipcMain.handle('desktop:setMinimizeToTray', (_event, enabled: boolean) => {
+  minimizeToTray = enabled && Boolean(tray)
+  return minimizeToTray
+})
+ipcMain.handle('desktop:setLaunchAtStartup', (_event, enabled: boolean) => {
+  if (!app.isPackaged) return false
+  app.setLoginItemSettings({ openAtLogin: enabled, path: process.execPath })
+  return app.getLoginItemSettings().openAtLogin
+})
+ipcMain.handle('desktop:getPreferences', () => ({
+  launchAtStartup: app.isPackaged && app.getLoginItemSettings().openAtLogin,
+  trayEnabled: Boolean(tray),
+  minimizeToTray,
+}))
 
 app.whenReady().then(() => {
   startMonitor()
   createWindow()
+  setTrayEnabled(true)
 })
 
 app.on('window-all-closed', () => app.quit())
 app.on('before-quit', () => {
   if (monitor && !monitor.killed) monitor.kill()
+  tray?.destroy()
 })

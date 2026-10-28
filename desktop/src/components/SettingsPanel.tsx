@@ -63,6 +63,21 @@ export function SettingsPanel({ value, onSave, onClose }: SettingsPanelProps) {
           <input type="checkbox" checked={draft.fullscreen}
             onChange={e => setDraft({ ...draft, fullscreen: e.target.checked })} />
         </label>
+        <label className="setting-row">
+          <span><strong>System tray icon</strong><small>Open or exit the dashboard from the tray</small></span>
+          <input type="checkbox" checked={draft.showTrayIcon}
+            onChange={e => setDraft({ ...draft, showTrayIcon: e.target.checked, minimizeToTray: e.target.checked ? draft.minimizeToTray : false })} />
+        </label>
+        <label className="setting-row">
+          <span><strong>Minimize to tray</strong><small>Hide the window instead of minimizing it</small></span>
+          <input type="checkbox" checked={draft.minimizeToTray} disabled={!draft.showTrayIcon}
+            onChange={e => setDraft({ ...draft, minimizeToTray: e.target.checked })} />
+        </label>
+        <label className="setting-row">
+          <span><strong>Launch with Windows</strong><small>Start automatically after you sign in</small></span>
+          <input type="checkbox" checked={draft.launchAtStartup}
+            onChange={e => setDraft({ ...draft, launchAtStartup: e.target.checked })} />
+        </label>
 
         <div className="thresholds">
           <h3>Thermal warning thresholds</h3>

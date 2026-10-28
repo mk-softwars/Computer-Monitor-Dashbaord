@@ -11,6 +11,9 @@ const defaultSettings: AppSettings = {
   rgbIntensity: 75,
   reducedMotion: false,
   fullscreen: false,
+  showTrayIcon: true,
+  minimizeToTray: false,
+  launchAtStartup: false,
   thresholds: {
     cpu: { warm: 75, hot: 90 },
     gpu: { warm: 75, hot: 88 },
@@ -41,19 +44,25 @@ export default function App() {
 
   useEffect(() => {
     void window.computerMonitor?.setFullscreen(settings.fullscreen)
+    void window.computerMonitor?.setTrayEnabled(settings.showTrayIcon)
+      .then(() => window.computerMonitor?.setMinimizeToTray(settings.minimizeToTray))
   // Apply startup preference once; later changes are applied when saved.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const saveSettings = async (next: AppSettings) => {
-    const validated = {
+    const validated: AppSettings = {
       ...next,
       refreshIntervalMs: Math.max(500, Math.min(10000, next.refreshIntervalMs)),
+      minimizeToTray: next.showTrayIcon && next.minimizeToTray,
     }
     setSettings(validated)
     localStorage.setItem('computer-monitor-settings', JSON.stringify(validated))
     document.documentElement.classList.toggle('reduced-motion', validated.reducedMotion)
     await window.computerMonitor?.setFullscreen(validated.fullscreen)
+    await window.computerMonitor?.setTrayEnabled(validated.showTrayIcon)
+    await window.computerMonitor?.setMinimizeToTray(validated.minimizeToTray)
+    await window.computerMonitor?.setLaunchAtStartup(validated.launchAtStartup)
     if (connection) {
       try {
         await fetch(`${connection.endpoint}/api/settings`, {

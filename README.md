@@ -16,6 +16,8 @@ real sensor readings—never generated or estimated values.
 - Separate normal, warm, hot, and unavailable thermal states
 - Configurable refresh interval, thresholds, RGB intensity, and reduced motion
 - Fullscreen command-center mode
+- Optional system tray controls and minimize-to-tray behavior
+- Optional launch with Windows, disabled by default
 - Local-only monitoring with no accounts, analytics, advertisements, or cloud
 
 Unsupported sensor values are displayed as `N/A`. Storage percentages represent
@@ -27,6 +29,10 @@ occupied capacity, not disk activity or transfer speed.
 2. Download `Computer-Monitor-Dashboard-Setup.exe`.
 3. Run the installer and choose an installation directory.
 4. Launch **Computer Monitor Dashboard** from the Start menu or desktop.
+
+The installer creates Start menu and desktop shortcuts. The installed
+application uses a stable Windows identity and can be pinned normally to the
+taskbar.
 
 End users do not need Cursor, Node.js, Python, .NET, or any development tools.
 The installer includes the Electron desktop runtime and a self-contained .NET

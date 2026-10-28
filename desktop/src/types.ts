@@ -50,6 +50,9 @@ export interface AppSettings {
   rgbIntensity: number
   reducedMotion: boolean
   fullscreen: boolean
+  showTrayIcon: boolean
+  minimizeToTray: boolean
+  launchAtStartup: boolean
   thresholds: Record<string, Threshold>
 }
 
@@ -64,6 +67,14 @@ declare global {
       getMonitorConnection(): Promise<MonitorConnection | null>
       toggleFullscreen(): Promise<boolean>
       setFullscreen(enabled: boolean): Promise<boolean>
+      setTrayEnabled(enabled: boolean): Promise<boolean>
+      setMinimizeToTray(enabled: boolean): Promise<boolean>
+      setLaunchAtStartup(enabled: boolean): Promise<boolean>
+      getDesktopPreferences(): Promise<{
+        launchAtStartup: boolean
+        trayEnabled: boolean
+        minimizeToTray: boolean
+      }>
       onMonitorChanged(callback: () => void): () => void
     }
   }
