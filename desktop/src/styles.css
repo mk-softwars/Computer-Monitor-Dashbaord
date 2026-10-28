@@ -73,7 +73,7 @@ button { color: inherit; }
 
 .topbar, .hero-grid, .secondary-grid, .core-panel, .sensor-note { position: relative; z-index: 1; max-width: 1900px; margin-inline: auto; }
 .topbar { min-height: 74px; display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
-.topbar { -webkit-app-region: drag; }
+.topbar { cursor: move; -webkit-app-region: drag; }
 .brand { display: flex; align-items: center; gap: 14px; }
 .brand__mark, .card__icon { display: grid; place-items: center; color: var(--cyan); border: 1px solid rgb(0 223 255 / .35); background: rgb(0 223 255 / .08); box-shadow: inset 0 0 18px rgb(0 223 255 / .08), 0 0 18px rgb(0 223 255 / .08); }
 .brand__mark { width: 45px; height: 45px; clip-path: polygon(50% 0, 93% 24%, 93% 76%, 50% 100%, 7% 76%, 7% 24%); }
@@ -193,6 +193,7 @@ button { color: inherit; }
   box-shadow: 0 12px 34px rgb(0 0 0 / .32);
   overflow: hidden;
   user-select: none;
+  cursor: move;
   -webkit-app-region: drag;
 }
 .mini-shell--framed { border: 1px solid rgb(0 223 255 / calc(.18 + var(--rgb-intensity) * .3)); box-shadow: 0 0 22px rgb(0 92 255 / calc(var(--rgb-intensity) * .15)), inset 0 1px rgb(255 255 255 / .04); }

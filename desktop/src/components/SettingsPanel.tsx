@@ -141,7 +141,7 @@ export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPan
               onChange={e => updateDisplay({ alwaysOnTop: e.target.checked })} />
           </label>
           <label className="setting-row">
-            <span><strong>Lock position</strong><small>Prevent accidental movement and resizing</small></span>
+            <span><strong>Lock widget position</strong><small>Prevent movement and resizing in compact widget modes</small></span>
             <input type="checkbox" checked={draft.display.locked}
               onChange={e => updateDisplay({ locked: e.target.checked })} />
           </label>

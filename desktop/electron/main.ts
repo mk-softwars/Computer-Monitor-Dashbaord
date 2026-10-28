@@ -251,9 +251,10 @@ function applyDisplayState(patch: Partial<Omit<DisplayState, 'bounds'>>) {
   const isDesktop = displayState.mode === 'desktop'
   if (!isFull && fullscreenActive) void setWindowFullscreen(false)
   const minimum = minimumSize(displayState.mode)
+  const positionLocked = !isFull && displayState.locked
   mainWindow.setMinimumSize(minimum.width, minimum.height)
-  mainWindow.setResizable(!displayState.locked)
-  mainWindow.setMovable(!displayState.locked)
+  mainWindow.setResizable(!positionLocked)
+  mainWindow.setMovable(!positionLocked)
   mainWindow.setAlwaysOnTop(!isDesktop && displayState.alwaysOnTop, 'floating')
   mainWindow.setSkipTaskbar(isDesktop)
   // Transparency is rendered on the panel background so telemetry text remains crisp.

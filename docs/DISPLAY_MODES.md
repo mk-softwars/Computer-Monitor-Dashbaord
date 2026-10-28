@@ -4,7 +4,9 @@
 
 The standard responsive RGB dashboard shows all detected CPU, GPU, memory,
 VRAM, and storage readings. The custom title bar supports drag, minimize,
-maximize/restore, close-to-tray, and fullscreen.
+maximize/restore, close-to-tray, and fullscreen. Drag the top header with the
+left mouse button to move the window. Widget position locking does not disable
+movement of the full dashboard.
 
 ## Floating bar monitor
 
