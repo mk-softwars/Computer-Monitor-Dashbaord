@@ -93,6 +93,7 @@ export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPan
             <select value={draft.display.mode}
               onChange={e => updateDisplay({ mode: e.target.value as AppSettings['display']['mode'] }, false)}>
               <option value="full">Full Dashboard</option>
+              <option value="bar">Floating Bar Monitor</option>
               <option value="mini">Floating Mini Monitor</option>
               <option value="desktop">Desktop Background Widget</option>
             </select>

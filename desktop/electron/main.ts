@@ -19,9 +19,10 @@ const sessionToken = randomBytes(32).toString('hex')
 
 app.setAppUserModelId('app.computermonitor.dashboard')
 
-type DisplayMode = 'full' | 'mini' | 'desktop'
+type DisplayMode = 'full' | 'bar' | 'mini' | 'desktop'
 type WindowBounds = { x?: number; y?: number; width: number; height: number }
 type DisplayState = {
+  schemaVersion: number
   mode: DisplayMode
   alwaysOnTop: boolean
   locked: boolean
@@ -37,6 +38,7 @@ type DisplayState = {
 }
 
 const defaultDisplayState: DisplayState = {
+  schemaVersion: 2,
   mode: 'full',
   alwaysOnTop: false,
   locked: false,
@@ -59,11 +61,18 @@ function statePath() {
 function loadDisplayState() {
   try {
     const stored = JSON.parse(readFileSync(statePath(), 'utf8')) as Partial<DisplayState>
+    const legacyBounds = stored.bounds ?? {}
+    const isLegacy = stored.schemaVersion !== defaultDisplayState.schemaVersion
+    const bounds = isLegacy
+      ? { ...legacyBounds, bar: legacyBounds.mini, mini: undefined }
+      : legacyBounds
+    const storedMode = isLegacy && stored.mode === 'mini' ? 'bar' : stored.mode
     displayState = {
       ...defaultDisplayState,
       ...stored,
-      mode: stored.launchLastMode === false ? 'full' : stored.mode ?? 'full',
-      bounds: stored.bounds ?? {},
+      schemaVersion: defaultDisplayState.schemaVersion,
+      mode: stored.launchLastMode === false ? 'full' : storedMode ?? 'full',
+      bounds,
     }
   } catch {
     displayState = structuredClone(defaultDisplayState)
@@ -78,7 +87,21 @@ function saveDisplayState() {
 function presetBounds(mode: DisplayMode): WindowBounds {
   if (mode === 'full') return { width: 1600, height: 1000 }
   if (mode === 'desktop') return { width: 960, height: 104 }
+  if (mode === 'mini') return { width: 540, height: 57 }
   return { width: 920, height: 96 }
+}
+
+function sizePresetBounds(mode: DisplayMode, preset: 'compact' | 'normal') {
+  if (mode === 'mini') {
+    return preset === 'compact' ? { width: 540, height: 57 } : { width: 690, height: 72 }
+  }
+  return preset === 'compact' ? { width: 720, height: 76 } : { width: 920, height: 96 }
+}
+
+function minimumSize(mode: DisplayMode) {
+  if (mode === 'full') return { width: 900, height: 600 }
+  if (mode === 'mini') return { width: 480, height: 52 }
+  return { width: 680, height: 68 }
 }
 
 function safeBounds(bounds: WindowBounds) {
@@ -134,7 +157,8 @@ function setMode(mode: DisplayMode) {
 function buildControlMenu() {
   return Menu.buildFromTemplate([
     { label: 'Open Full Dashboard', click: () => setMode('full') },
-    { label: 'Show Floating Monitor', click: () => setMode('mini') },
+    { label: 'Show Floating Bar Monitor', click: () => setMode('bar') },
+    { label: 'Show Floating Mini Monitor', click: () => setMode('mini') },
     { label: 'Desktop Widget Mode', click: () => setMode('desktop') },
     { type: 'separator' },
     {
@@ -212,7 +236,8 @@ function applyDisplayState(patch: Partial<Omit<DisplayState, 'bounds'>>) {
   const isFull = displayState.mode === 'full'
   const isDesktop = displayState.mode === 'desktop'
   if (!isFull && mainWindow.isFullScreen()) mainWindow.setFullScreen(false)
-  mainWindow.setMinimumSize(isFull ? 900 : 680, isFull ? 600 : 68)
+  const minimum = minimumSize(displayState.mode)
+  mainWindow.setMinimumSize(minimum.width, minimum.height)
   mainWindow.setResizable(!displayState.locked)
   mainWindow.setMovable(!displayState.locked)
   mainWindow.setAlwaysOnTop(!isDesktop && displayState.alwaysOnTop, 'floating')
@@ -286,8 +311,8 @@ function createWindow() {
   const initialBounds = safeBounds(displayState.bounds[displayState.mode] ?? presetBounds(displayState.mode))
   mainWindow = new BrowserWindow({
     ...initialBounds,
-    minWidth: displayState.mode === 'full' ? 900 : 680,
-    minHeight: displayState.mode === 'full' ? 600 : 68,
+    minWidth: minimumSize(displayState.mode).width,
+    minHeight: minimumSize(displayState.mode).height,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
@@ -349,9 +374,7 @@ function persistCurrentBounds() {
   if (!mainWindow || !windowReady || applyingBounds || mainWindow.isMaximized() || mainWindow.isFullScreen()) return
   const bounds = mainWindow.getBounds()
   displayState.bounds[displayState.mode] = bounds
-  const preset = displayState.sizePreset === 'compact'
-    ? { width: 720, height: 76 }
-    : { width: 920, height: 96 }
+  const preset = sizePresetBounds(displayState.mode, displayState.sizePreset === 'compact' ? 'compact' : 'normal')
   const matchesPreset = displayState.sizePreset !== 'custom' &&
     bounds.width === preset.width && bounds.height === preset.height
   if (displayState.mode !== 'full' && !matchesPreset && displayState.sizePreset !== 'custom') {
@@ -399,7 +422,7 @@ ipcMain.handle('display:setState', (_event, patch: Partial<Omit<DisplayState, 'b
   applyDisplayState(patch))
 ipcMain.handle('display:setSizePreset', (_event, preset: 'compact' | 'normal') => {
   if (!mainWindow) return null
-  const size = preset === 'compact' ? { width: 720, height: 76 } : { width: 920, height: 96 }
+  const size = sizePresetBounds(displayState.mode, preset)
   const current = mainWindow.getBounds()
   const bounds = safeBounds({ ...current, ...size })
   applyingBounds = true

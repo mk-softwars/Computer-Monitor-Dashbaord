@@ -6,7 +6,7 @@ real sensor readings—never generated or estimated values.
 
 ![Computer Monitor Dashbaord](docs/screenshots/dashboard.png)
 
-![Floating mini monitor](docs/screenshots/mini-monitor.png)
+![Floating bar monitor](docs/screenshots/mini-monitor.png)
 
 ![Desktop widget mode](docs/screenshots/desktop-widget.png)
 
@@ -22,7 +22,7 @@ real sensor readings—never generated or estimated values.
 - Fullscreen command-center mode
 - Optional system tray controls and minimize-to-tray behavior
 - Optional launch with Windows, disabled by default
-- Full dashboard, floating horizontal monitor, and safe desktop-widget modes
+- Full dashboard, floating bar monitor, 25%-smaller mini monitor, and safe desktop-widget modes
 - Adjustable opacity, panel transparency, text scale, position lock, and click-through
 - Local-only monitoring with no accounts, analytics, advertisements, or cloud
 

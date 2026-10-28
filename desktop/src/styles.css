@@ -199,6 +199,17 @@ button { color: inherit; }
 .mini-shell--transparent { background: transparent; box-shadow: none; }
 .mini-shell--glass { backdrop-filter: blur(18px) saturate(1.3); }
 .mini-shell--desktop { border-color: rgb(161 42 255 / .3); }
+.mini-shell--mini { min-width: 480px; min-height: 52px; border-radius: 9px; }
+.mini-shell--mini .mini-brand { width: 28px; font-size: 6px; }
+.mini-shell--mini .mini-brand i { width: 5px; height: 5px; }
+.mini-shell--mini .mini-metrics { grid-template-columns: repeat(8, minmax(40px, 1fr)); }
+.mini-shell--mini .mini-metric { padding: 2px; }
+.mini-shell--mini .mini-metric small { font-size: calc(6px * var(--text-scale, 1)); letter-spacing: .05em; }
+.mini-shell--mini .mini-metric strong { font-size: calc(14px * var(--text-scale, 1)); text-shadow: 0 0 9px color-mix(in srgb, var(--metric-color, var(--cyan)), transparent 55%); }
+.mini-shell--mini .mini-actions { padding: 0 2px; }
+.mini-shell--mini .mini-actions > button,
+.mini-shell--mini .window-controls--compact button { width: 22px; height: 28px; }
+.mini-shell--mini .mini-actions svg { width: 11px; }
 .mini-brand { width: 48px; display: grid; place-content: center; gap: 3px; border-right: 1px solid rgb(102 132 175 / .15); color: #7086a2; text-align: center; font: 700 8px Rajdhani, sans-serif; letter-spacing: .12em; }
 .mini-brand i { width: 6px; height: 6px; justify-self: center; border-radius: 50%; background: #64738a; box-shadow: 0 0 8px currentColor; }
 .mini-brand i.is-live { color: var(--cyan); background: var(--cyan); }

@@ -1,5 +1,5 @@
 export type ThermalState = 'unavailable' | 'normal' | 'warm' | 'hot'
-export type DisplayMode = 'full' | 'mini' | 'desktop'
+export type DisplayMode = 'full' | 'bar' | 'mini' | 'desktop'
 
 export interface DisplayState {
   mode: DisplayMode

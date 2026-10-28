@@ -6,12 +6,19 @@ The standard responsive RGB dashboard shows all detected CPU, GPU, memory,
 VRAM, and storage readings. The custom title bar supports drag, minimize,
 maximize/restore, close-to-tray, and fullscreen.
 
-## Floating mini monitor
+## Floating bar monitor
 
 The frameless horizontal monitor presents CPU usage and temperature, GPU usage
 and temperature, RAM, VRAM, and primary fixed-drive capacity and temperature
 in one row. It can be resized across monitors and optionally kept above other
 applications.
+
+## Floating mini monitor
+
+The mini monitor contains the same eight live metrics in a layout that is 25%
+smaller than the compact floating bar (540×57 instead of 720×76). Labels,
+controls, and typography are condensed while dragging, position persistence,
+opacity, locking, and always-on-top remain available.
 
 Right-click the widget or use the system tray to change mode, opacity,
 always-on-top, lock, click-through, or exit the application.

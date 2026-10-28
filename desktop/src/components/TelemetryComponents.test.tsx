@@ -56,6 +56,8 @@ describe('telemetry components', () => {
     const onPreview = vi.fn()
     render(<SettingsPanel value={settings} onSave={vi.fn()} onPreview={onPreview} onClose={vi.fn()} />)
     const mode = screen.getByLabelText(/Mode/)
+    expect(screen.getByRole('option', { name: 'Floating Bar Monitor' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Floating Mini Monitor' })).toBeInTheDocument()
     fireEvent.change(mode, { target: { value: 'mini' } })
     expect(mode).toHaveValue('mini')
     expect(onPreview).not.toHaveBeenCalled()

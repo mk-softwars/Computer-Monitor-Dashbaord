@@ -237,17 +237,18 @@ function MiniMonitor({ snapshot, state, settings, style, onOpenSettings, setting
   const gpu = snapshot?.gpus[0]
   const drive = snapshot?.storage[0]
   const storageLabel = drive?.kind?.toUpperCase() || 'SSD'
-  const metrics = [
-    { label: 'CPU', value: formatPercent(snapshot?.cpu.usagePercent), tone: 'blue' },
-    { label: 'CPU TEMP', value: formatTemperature(snapshot?.cpu.temperatureCelsius), tone: thermalTone(snapshot?.cpu.thermalState) },
-    { label: 'GPU', value: formatPercent(gpu?.usagePercent), tone: 'purple' },
-    { label: 'GPU TEMP', value: formatTemperature(gpu?.temperatureCelsius), tone: thermalTone(gpu?.thermalState) },
-    { label: 'RAM', value: formatPercent(snapshot?.memory.usagePercent), tone: 'cyan' },
-    { label: 'VRAM', value: formatPercent(gpu?.vramUsagePercent), tone: 'pink' },
-    { label: storageLabel, value: formatPercent(drive?.usedPercent), tone: 'violet' },
-    { label: `${storageLabel} TEMP`, value: formatTemperature(drive?.temperatureCelsius), tone: thermalTone(drive?.thermalState) },
-  ]
   const display = settings.display
+  const isMini = display.mode === 'mini'
+  const metrics = [
+    { label: 'CPU', shortLabel: 'CPU', value: formatPercent(snapshot?.cpu.usagePercent), tone: 'blue' },
+    { label: 'CPU TEMP', shortLabel: 'CPU°', value: formatTemperature(snapshot?.cpu.temperatureCelsius), tone: thermalTone(snapshot?.cpu.thermalState) },
+    { label: 'GPU', shortLabel: 'GPU', value: formatPercent(gpu?.usagePercent), tone: 'purple' },
+    { label: 'GPU TEMP', shortLabel: 'GPU°', value: formatTemperature(gpu?.temperatureCelsius), tone: thermalTone(gpu?.thermalState) },
+    { label: 'RAM', shortLabel: 'RAM', value: formatPercent(snapshot?.memory.usagePercent), tone: 'cyan' },
+    { label: 'VRAM', shortLabel: 'VRAM', value: formatPercent(gpu?.vramUsagePercent), tone: 'pink' },
+    { label: storageLabel, shortLabel: storageLabel, value: formatPercent(drive?.usedPercent), tone: 'violet' },
+    { label: `${storageLabel} TEMP`, shortLabel: `${storageLabel}°`, value: formatTemperature(drive?.temperatureCelsius), tone: thermalTone(drive?.thermalState) },
+  ]
   return (
     <main className={[
       'mini-shell',
@@ -257,11 +258,11 @@ function MiniMonitor({ snapshot, state, settings, style, onOpenSettings, setting
       display.subtleFrame ? 'mini-shell--framed' : '',
       settings.reducedMotion ? 'reduced-motion' : '',
     ].filter(Boolean).join(' ')} style={style}>
-      <div className="mini-brand"><i className={state === 'live' ? 'is-live' : ''} /><span>CMD</span></div>
+      <div className="mini-brand"><i className={state === 'live' ? 'is-live' : ''} /><span>{isMini ? 'M' : 'CMD'}</span></div>
       <div className="mini-metrics">
         {metrics.map(metric => (
           <div className={`mini-metric mini-metric--${metric.tone}`} key={metric.label}>
-            <small>{metric.label}</small><strong>{metric.value}</strong>
+            <small title={metric.label}>{isMini ? metric.shortLabel : metric.label}</small><strong>{metric.value}</strong>
           </div>
         ))}
       </div>
