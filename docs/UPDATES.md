@@ -1,6 +1,6 @@
 # Optional update notifications
 
-Computer Monitor Dashbaord does not silently download or install updates.
+Computer Monitor Dashboard does not silently download or install updates.
 
 A future release may add an opt-in notification that:
 

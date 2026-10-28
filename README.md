@@ -1,10 +1,10 @@
-# Computer Monitor Dashbaord
+# Computer Monitor Dashboard
 
 A private-by-design Windows 11 hardware monitor with a neon blue, purple, pink,
 and cyan gaming interface. It detects the computer it is running on and shows
 real sensor readings—never generated or estimated values.
 
-![Computer Monitor Dashbaord](docs/screenshots/dashboard.png)
+![Computer Monitor Dashboard](docs/screenshots/dashboard.png)
 
 ![Floating bar monitor](docs/screenshots/mini-monitor.png)
 
@@ -32,9 +32,9 @@ occupied capacity, not disk activity or transfer speed.
 ## Download and install
 
 1. Open the repository’s **Releases** page.
-2. Download `Computer-Monitor-Dashbaord-Setup.exe`.
+2. Download `Computer-Monitor-Dashboard-Setup.exe`.
 3. Run the installer and choose an installation directory.
-4. Launch **Computer Monitor Dashbaord** from the Start menu or desktop.
+4. Launch **Computer Monitor Dashboard** from the Start menu or desktop.
 
 The installer creates Start menu and desktop shortcuts. The installed
 application uses a stable Windows identity and can be pinned normally to the
@@ -106,7 +106,7 @@ npm run build
 ```
 
 The installer is written to
-`artifacts\release\Computer-Monitor-Dashbaord-Setup.exe`.
+`artifacts\release\Computer-Monitor-Dashboard-Setup.exe`.
 
 ## Publishing releases
 
@@ -124,7 +124,7 @@ widget limitation are documented in [Display modes](docs/DISPLAY_MODES.md).
 
 ## License
 
-Computer Monitor Dashbaord is available under the [MIT License](LICENSE).
+Computer Monitor Dashboard is available under the [MIT License](LICENSE).
 Third-party components retain their own licenses; see
 [Third-party notices](THIRD_PARTY_NOTICES.md).
 

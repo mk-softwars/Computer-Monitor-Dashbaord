@@ -1,4 +1,4 @@
-# Releasing Computer Monitor Dashbaord
+# Releasing Computer Monitor Dashboard
 
 ## Prerequisites
 

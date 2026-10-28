@@ -61,7 +61,7 @@ jobs:
       - name: Validate release package
         shell: pwsh
         run: |
-          $installer = "artifacts/release/Computer-Monitor-Dashbaord-Setup.exe"
+          $installer = "artifacts/release/Computer-Monitor-Dashboard-Setup.exe"
           $service = "artifacts/release/win-unpacked/resources/monitor/ComputerMonitor.Service.exe"
           if (!(Test-Path $installer)) { throw "Release installer is missing." }
           if (!(Test-Path $service)) { throw "Self-contained monitor service is missing." }
@@ -70,7 +70,7 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Computer Monitor Dashbaord ${{ github.ref_name }}
+          name: Computer Monitor Dashboard ${{ github.ref_name }}
           generate_release_notes: true
           fail_on_unmatched_files: true
-          files: artifacts/release/Computer-Monitor-Dashbaord-Setup.exe
+          files: artifacts/release/Computer-Monitor-Dashboard-Setup.exe

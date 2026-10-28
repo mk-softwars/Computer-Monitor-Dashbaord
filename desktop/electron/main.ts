@@ -152,7 +152,7 @@ function setTrayEnabled(enabled: boolean) {
   const developmentIcon = path.resolve(__dirname, '../public/app-icon.png')
   const icon = nativeImage.createFromPath(app.isPackaged ? packagedIcon : developmentIcon)
   tray = new Tray(icon.resize({ width: 20, height: 20 }))
-  tray.setToolTip('Computer Monitor Dashbaord')
+  tray.setToolTip('Computer Monitor Dashboard')
   tray.setContextMenu(buildControlMenu())
   tray.on('double-click', showDashboard)
   return true

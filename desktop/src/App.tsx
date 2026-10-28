@@ -166,7 +166,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand">
           <div className="brand__mark"><Zap /></div>
-          <div><span className="eyebrow">SYSTEM TELEMETRY</span><h1>COMPUTER <b>MONITOR DASHBAORD</b></h1></div>
+          <div><span className="eyebrow">SYSTEM TELEMETRY</span><h1>COMPUTER <b>MONITOR DASHBOARD</b></h1></div>
         </div>
         <div className="topbar__actions">
           <div className={`live-status live-status--${state}`}>
