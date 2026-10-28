@@ -1,4 +1,4 @@
-import { Cpu, Database, Expand, Gauge, LayoutDashboard, Maximize2, MemoryStick, Minus, Monitor, PictureInPicture2, Settings, Square, X, Zap } from 'lucide-react'
+import { Cpu, Database, Expand, Gauge, LayoutDashboard, Maximize2, MemoryStick, Minus, Monitor, PictureInPicture2, Settings, Square, Wifi, X, Zap } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { NeonGauge } from './components/NeonGauge'
 import { OverlayBar } from './components/OverlayBar'
@@ -6,6 +6,8 @@ import { defaultAppSettings, SettingsPanel } from './components/SettingsPanel'
 import { ThermalStatus } from './components/ThermalStatus'
 import { useDashboardLayout } from './hooks/useDashboardLayout'
 import { useTelemetry, type ConnectionState } from './hooks/useTelemetry'
+import { formatMbps } from './networkFormat'
+import { applyTheme, normalizeTheme } from './theme'
 import type { AppSettings, DisplayState, ThermalState } from './types'
 
 function loadSettings(): AppSettings {
@@ -17,8 +19,10 @@ function loadSettings(): AppSettings {
     return {
       ...defaults,
       ...parsed,
+      theme: normalizeTheme(parsed.theme),
       display: { ...defaults.display, ...parsed.display },
       thresholds: { ...defaults.thresholds, ...parsed.thresholds },
+      network: { ...defaults.network, ...parsed.network },
     }
   } catch {
     return defaultAppSettings()
@@ -37,6 +41,10 @@ export default function App() {
   const lastUpdate = useMemo(() => snapshot
     ? new Date(snapshot.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : '--:--:--', [snapshot])
+
+  useEffect(() => {
+    applyTheme(settings.theme)
+  }, [settings.theme])
 
   useEffect(() => {
     document.documentElement.classList.toggle('reduced-motion', settings.reducedMotion)
@@ -83,6 +91,22 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    if (!connection) return
+    void fetch(`${connection.endpoint}/api/settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Monitor-Token': connection.token },
+      body: JSON.stringify({
+        refreshIntervalMs: settings.refreshIntervalMs,
+        thresholds: settings.thresholds,
+        networkEnabled: settings.network.enabled,
+        networkAdapterId: settings.network.adapterId,
+      }),
+    }).catch(() => {
+      // The WebSocket reconnect loop reports service availability.
+    })
+  }, [connection, settings.refreshIntervalMs, settings.thresholds, settings.network.enabled, settings.network.adapterId])
+
   const openSettings = async () => {
     window.computerMonitor?.setPointerPassthrough(false)
     await window.computerMonitor?.prepareSettings()
@@ -97,10 +121,12 @@ export default function App() {
   const saveSettings = useCallback(async (next: AppSettings) => {
     let validated: AppSettings = {
       ...next,
+      theme: normalizeTheme(next.theme),
       refreshIntervalMs: Math.max(500, Math.min(10000, next.refreshIntervalMs)),
       uiScale: 100,
       minimizeToTray: next.showTrayIcon && next.minimizeToTray,
     }
+    applyTheme(validated.theme)
     setSettings(validated)
     localStorage.setItem('computer-monitor-settings', JSON.stringify(validated))
     document.documentElement.classList.toggle('reduced-motion', validated.reducedMotion)
@@ -125,6 +151,8 @@ export default function App() {
           body: JSON.stringify({
             refreshIntervalMs: validated.refreshIntervalMs,
             thresholds: validated.thresholds,
+            networkEnabled: validated.network.enabled,
+            networkAdapterId: validated.network.adapterId,
           }),
         })
       } catch {
@@ -199,7 +227,7 @@ export default function App() {
 
       <section className="hero-grid" aria-label="Primary hardware">
         <HardwareCard title="CENTRAL PROCESSING UNIT" name={snapshot?.cpu.name ?? 'Detecting processor…'} tone="blue" icon={<Cpu />}>
-          <NeonGauge value={snapshot?.cpu.usagePercent ?? null} label="CPU LOAD" tone="blue" />
+          <NeonGauge value={snapshot?.cpu.usagePercent ?? null} label="CPU LOAD" tone="blue" theme={settings.theme} />
           <div className="card__telemetry">
             <ThermalStatus value={snapshot?.cpu.temperatureCelsius ?? null}
               state={snapshot?.cpu.thermalState ?? 'unavailable'} />
@@ -208,7 +236,7 @@ export default function App() {
           </div>
         </HardwareCard>
         <HardwareCard title="GRAPHICS PROCESSING UNIT" name={gpu?.name ?? 'No supported GPU detected'} tone="purple" icon={<Gauge />}>
-          <NeonGauge value={gpu?.usagePercent ?? null} label="GPU LOAD" tone="purple" />
+          <NeonGauge value={gpu?.usagePercent ?? null} label="GPU LOAD" tone="purple" theme={settings.theme} />
           <div className="card__telemetry">
             <ThermalStatus value={gpu?.temperatureCelsius ?? null}
               state={gpu?.thermalState ?? 'unavailable'} />
@@ -221,24 +249,51 @@ export default function App() {
 
       <section className="secondary-grid" aria-label="Memory and storage">
         <CompactCard title="SYSTEM MEMORY" subtitle="Physical RAM" icon={<MemoryStick />} tone="cyan">
-          <NeonGauge value={snapshot?.memory.usagePercent ?? null} label="RAM USED" tone="cyan" size="small" />
+          <NeonGauge value={snapshot?.memory.usagePercent ?? null} label="RAM USED" tone="cyan" size="small" theme={settings.theme} />
           <ThermalStatus value={snapshot?.memory.temperatureCelsius ?? null}
             state={snapshot?.memory.thermalState ?? 'unavailable'} />
         </CompactCard>
         <CompactCard title="GRAPHICS MEMORY" subtitle={gpu?.name ?? 'Unavailable'} icon={<Gauge />} tone="purple">
-          <NeonGauge value={gpu?.vramUsagePercent ?? null} label="VRAM USED" tone="purple" size="small" />
+          <NeonGauge value={gpu?.vramUsagePercent ?? null} label="VRAM USED" tone="purple" size="small" theme={settings.theme} />
           <div className="availability"><span>GPU sensor</span><strong>{gpu ? 'DETECTED' : 'N/A'}</strong></div>
         </CompactCard>
         {snapshot?.storage.map(drive => (
           <CompactCard key={drive.id} title={`${drive.kind} STORAGE`} subtitle={`${drive.name} · ${drive.driveLetters}`} icon={<Database />} tone="violet">
-            <NeonGauge value={drive.usedPercent} label="CAPACITY USED" tone="violet" size="small" />
+            <NeonGauge value={drive.usedPercent} label="CAPACITY USED" tone="violet" size="small" theme={settings.theme} />
             <ThermalStatus value={drive.temperatureCelsius} state={drive.thermalState} />
           </CompactCard>
         ))}
         {!snapshot?.storage.length && (
           <CompactCard title="STORAGE" subtitle="Detecting fixed drives…" icon={<Database />} tone="violet">
-            <NeonGauge value={null} label="CAPACITY USED" tone="violet" size="small" />
+            <NeonGauge value={null} label="CAPACITY USED" tone="violet" size="small" theme={settings.theme} />
             <ThermalStatus value={null} state="unavailable" />
+          </CompactCard>
+        )}
+        {settings.network.enabled && (
+          <CompactCard title="NETWORK" subtitle={snapshot?.network?.adapterName
+            ? `${snapshot.network.adapterKind ?? 'Adapter'} · ${snapshot.network.adapterName}`
+            : 'Detecting adapter…'} icon={<Wifi />} tone="blue">
+            <div className="network-speeds" aria-label="Network speeds">
+              {settings.network.showDownload && (
+                <div className="network-speeds__row">
+                  <span>Download</span>
+                  <strong>{formatMbps(snapshot?.network?.downloadMbps)}</strong>
+                </div>
+              )}
+              {settings.network.showUpload && (
+                <div className="network-speeds__row">
+                  <span>Upload</span>
+                  <strong>{formatMbps(snapshot?.network?.uploadMbps)}</strong>
+                </div>
+              )}
+              {!settings.network.showDownload && !settings.network.showUpload && (
+                <div className="availability"><span>Metrics</span><strong>Hidden</strong></div>
+              )}
+            </div>
+            <div className="availability">
+              <span>Interface</span>
+              <strong>{snapshot?.network?.adapterKind ?? 'N/A'}</strong>
+            </div>
           </CompactCard>
         )}
       </section>
@@ -259,7 +314,8 @@ export default function App() {
       ) : null}
 
       {settingsOpen && <SettingsPanel value={settings} sensorStatus={statusDetail(state, lastUpdate)}
-        displays={displays} onChange={saveSettings} onClose={closeSettings}
+        displays={displays} networkAdapters={snapshot?.network?.adapters ?? []}
+        onChange={saveSettings} onClose={closeSettings}
         onResetLayout={() => void window.computerMonitor?.resetWindowLayout?.()} />}
     </main>
   )

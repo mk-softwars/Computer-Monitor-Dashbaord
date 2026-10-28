@@ -36,8 +36,9 @@ the desktop app and a self-contained hardware-monitoring service.
 
 ### Windows security prompts
 
-v1.0.0 is **unsigned**. Windows SmartScreen or another filter may say the app
-is unrecognized.
+Current community builds, including **v1.1.0**, are **unsigned**. Windows
+SmartScreen or another filter may say the app is unrecognized. The earlier
+**v1.0.0** installer remains available on GitHub Releases.
 
 - Confirm you downloaded it from this repository’s Releases page.
 - If SmartScreen appears, you can open **More info** and choose **Run anyway**
@@ -75,6 +76,8 @@ What the current Windows app actually does:
 - RAM utilization from Windows; RAM temperature only if a memory sensor exists
 - Fixed-drive occupied capacity and drive temperature when the device exposes
   one
+- Optional live Ethernet/Wi-Fi download and upload speed in Mbps from local
+  interface counters (off on Bar/Mini until enabled in Settings)
 - Thermal labels: Normal, Warm, Hot, or Unavailable (thresholds are editable)
 - Fullscreen (the expand control) and a resizable **Windowed** dashboard
 - Maximized **Full** dashboard
@@ -87,9 +90,11 @@ What the current Windows app actually does:
 - RGB neon blue, purple, pink, and cyan visual design inspired by gaming
   hardware lighting (including Alienware-style RGB). See
   [No affiliation](DISCLAIMER.md#h-no-affiliation).
+- Selectable themes: **Original RGB** (default), **90s**, and **Coding**
 
-The app does **not** show clock speeds, fan RPM, voltages, power draw, network
-speed, disk transfer rate, or FPS.
+The app does **not** show clock speeds, fan RPM, voltages, power draw, disk
+transfer rate, or FPS. Network values are interface throughput in Mbps, not an
+internet speed test.
 
 ## Known limitations
 
@@ -120,8 +125,11 @@ percentage:
 | RAM USED | Share of physical memory in use |
 | VRAM USED | Share of graphics memory in use |
 | CAPACITY USED | How full a fixed drive is, not how fast it is copying files |
+| Download | Live receive speed on the selected adapter, in Mbps |
+| Upload | Live send speed on the selected adapter, in Mbps |
 
-Bar and Mini show the same kinds of numbers in a compact row.
+Bar and Mini show the same kinds of numbers in a compact row. Network speeds
+on Bar/Mini stay off until you enable them in Settings → Network.
 
 ### Read temperatures
 
@@ -147,6 +155,20 @@ You can also right-click the tray icon and choose a mode.
 | Desktop | Full dashboard behind other windows, no taskbar button |
 
 More detail: [Display modes](docs/DISPLAY_MODES.md).
+
+### Change theme
+
+Open **Settings → Appearance**. Choose one of the three preview cards:
+
+| Theme | Look |
+| --- | --- |
+| Original RGB | The current neon dashboard. This is the default. |
+| 90s | Classic Windows gray panels, beveled borders, and system fonts |
+| Coding | Black-and-green terminal-style monitor |
+
+The selected theme applies immediately on the full dashboard, Windowed, Bar,
+Mini, and Desktop Background. It is saved on this PC and restored at the next
+launch. An unrecognized saved value falls back to Original RGB.
 
 ### Resize and move
 

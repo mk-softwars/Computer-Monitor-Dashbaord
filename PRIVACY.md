@@ -22,6 +22,9 @@ While the app is running it reads, where available:
 - Physical RAM utilization and memory temperature if a sensor exists
 - Fixed-drive names, letters, occupied capacity, and drive temperature if a
   sensor exists
+- Optional network download and upload **speed** from this PC’s Ethernet or
+  Wi-Fi interface byte counters (not browsing history, URLs, packet contents,
+  or an internet speed test)
 - Window layout, display mode, and the settings you choose
 
 Missing sensors are shown as **N/A**. The app does not invent replacement
@@ -54,11 +57,15 @@ Windows user profile until you delete them.
 
 Reviewed application code does **not**:
 
-- Send hardware telemetry to the developer
+- Send hardware telemetry or network statistics to the developer
+- Run automatic internet speed tests
+- Collect browsing history, URLs, packet contents, or personal traffic data
 - Implement Google Analytics, advertising SDKs, or similar trackers
 - Implement crash-report upload
 - Check GitHub or another server for updates
 - Require a login or API key
+- Require administrator rights for CPU, RAM, GPU load, or network interface
+  counters
 
 Optional GitHub Release update notifications are described as a possible
 future feature in [Updates](docs/UPDATES.md) and are **not implemented**.

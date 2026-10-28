@@ -2,11 +2,13 @@
 
 ## Full dashboard
 
-The standard RGB dashboard shows all detected CPU, GPU, memory, VRAM, and
-storage readings. At the original window size the layout matches the original
-command-center design. Smaller windows use a responsive layout without changing
-the theme. Drag empty dashboard chrome or the top header to move the window.
-Cards and buttons stay clickable.
+The standard dashboard shows all detected CPU, GPU, memory, VRAM, storage, and
+network readings. At the original window size the Original RGB layout matches
+the original command-center design. Smaller windows use a responsive layout
+without changing that default theme. Settings → Appearance can switch to the
+90s or Coding theme; native window behavior, Always on Top, Click-Through, and
+overlay size stay the same. Drag empty dashboard chrome or the top header to
+move the window. Cards and buttons stay clickable.
 
 **Full Dashboard** maximizes the window. **Windowed** uses the same dashboard
 at a restored size.
@@ -14,7 +16,9 @@ at a restored size.
 ## Floating bar monitor
 
 The frameless 750×85 overlay presents CPU, GPU, RAM, VRAM, and primary storage
-in one Xbox-style row. It can stay above ordinary windows with Always on Top,
+in one Xbox-style row. Optional download/upload Mbps can be added as a compact
+NET cell from Settings → Network; it is off by default so the bar stays the
+original width. It can stay above ordinary windows with Always on Top,
 use Overlay Opacity from 10% to 100% (default 90%), and remember its position.
 
 ## Floating mini monitor

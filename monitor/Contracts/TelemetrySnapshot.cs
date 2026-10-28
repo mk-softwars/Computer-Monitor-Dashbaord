@@ -6,7 +6,8 @@ public sealed record TelemetrySnapshot(
     IReadOnlyList<GpuTelemetry> Gpus,
     MemoryTelemetry Memory,
     IReadOnlyList<StorageTelemetry> Storage,
-    MonitorHealth Health);
+    MonitorHealth Health,
+    NetworkTelemetry Network);
 
 public sealed record ProcessorTelemetry(
     string Name,
@@ -43,6 +44,21 @@ public sealed record MonitorHealth(
     string Status,
     bool Elevated,
     IReadOnlyList<string> Notes);
+
+public sealed record NetworkTelemetry(
+    bool Enabled,
+    string? AdapterId,
+    string? AdapterName,
+    string? AdapterKind,
+    double? DownloadMbps,
+    double? UploadMbps,
+    IReadOnlyList<NetworkAdapterInfo> Adapters);
+
+public sealed record NetworkAdapterInfo(
+    string Id,
+    string Name,
+    string Kind,
+    bool Connected);
 
 public enum ThermalState
 {

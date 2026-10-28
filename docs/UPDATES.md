@@ -12,5 +12,6 @@ A future release may add an opt-in notification that:
 5. Can be disabled completely and handles offline use without warnings.
 
 The GitHub repository owner and release URL must be known before this feature is
-implemented. The application currently makes no network requests and remains
-fully local.
+implemented. The application currently makes no internet requests and remains
+fully local. Optional download/upload Mbps readings use this PC’s interface
+counters only.

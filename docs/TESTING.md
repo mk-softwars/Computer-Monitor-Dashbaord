@@ -15,6 +15,9 @@
 - Desktop widget mode stays out of the taskbar and uses normal desktop z-order.
 - Mini and desktop bounds persist and are validated against connected displays.
 - Click-through has tray and Ctrl+Shift+F10 recovery paths.
+- Settings → Appearance can switch Original RGB, 90s, and Coding immediately.
+- The selected theme is restored after restart and invalid values fall back to
+  Original RGB. Overlay metrics remain readable in every theme.
 
 ## Required second-computer testing
 

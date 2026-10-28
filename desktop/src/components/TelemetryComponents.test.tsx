@@ -8,6 +8,10 @@ import { ThermalStatus } from './ThermalStatus'
 const settings = defaultAppSettings()
 
 describe('telemetry components', () => {
+  afterEach(() => {
+    document.documentElement.dataset.theme = 'rgb'
+  })
+
   it('clearly renders unavailable readings', () => {
     render(<><NeonGauge value={null} label="GPU LOAD" tone="purple" />
       <ThermalStatus value={null} state="unavailable" /></>)
@@ -88,6 +92,78 @@ describe('telemetry components', () => {
       display: expect.objectContaining({ clickThrough: true }),
     }))
     expect(screen.getByLabelText('Click-Through shortcut')).toHaveDisplayValue('Ctrl+Shift+F10')
+  })
+
+  it('autosaves network adapter and overlay visibility settings', async () => {
+    const onChange = vi.fn()
+    render(<SettingsPanel value={settings} sensorStatus="Live" displays={[]}
+      networkAdapters={[{ id: 'nic-1', name: 'Ethernet', kind: 'Ethernet', connected: true }]}
+      onChange={onChange} onClose={vi.fn()} onResetLayout={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Network' }))
+    fireEvent.change(screen.getByLabelText('Network Adapter'), { target: { value: 'nic-1' } })
+    fireEvent.click(screen.getByLabelText('Show Network Metrics in Bar'))
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalled())
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      network: expect.objectContaining({ adapterId: 'nic-1', showInBar: true, enabled: true }),
+    }))
+  })
+
+  it('defaults to Original RGB and applies a selected theme from Appearance', async () => {
+    const onChange = vi.fn()
+    render(<SettingsPanel value={settings} sensorStatus="Live" displays={[]}
+      onChange={onChange} onClose={vi.fn()} onResetLayout={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Appearance' }))
+    expect(settings.theme).toBe('rgb')
+    expect(screen.getByRole('radio', { name: 'Original RGB' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('radio', { name: '90s' })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('radio', { name: 'Coding' })).toHaveAttribute('aria-checked', 'false')
+    fireEvent.click(screen.getByRole('radio', { name: '90s' }))
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalled())
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ theme: 'nineties' }))
+    expect(document.documentElement.dataset.theme).toBe('nineties')
+    fireEvent.keyDown(screen.getByRole('radio', { name: '90s' }), { key: 'ArrowRight' })
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ theme: 'coding' })))
+  })
+
+  it('keeps overlay metrics readable in the 90s theme', () => {
+    const overlaySettings = {
+      ...settings,
+      theme: 'nineties' as const,
+      display: { ...settings.display, mode: 'bar' as const },
+    }
+    render(<OverlayBar snapshot={snapshot} state="live" settings={overlaySettings} style={{}}
+      settingsOpen={false} onOpenSettings={vi.fn()} onCloseSettings={vi.fn()} />)
+    expect(screen.getByText('CPU')).toBeInTheDocument()
+    expect(screen.getByText('63%')).toBeInTheDocument()
+    expect(screen.getByLabelText('Open settings')).toBeInTheDocument()
+  })
+
+  it('shows compact overlay network speeds only when enabled', () => {
+    const overlaySettings = {
+      ...settings,
+      display: { ...settings.display, mode: 'bar' as const },
+      network: { ...settings.network, showInBar: true },
+    }
+    const withNetwork = {
+      ...snapshot,
+      network: {
+        enabled: true,
+        adapterId: 'nic-1',
+        adapterName: 'Ethernet',
+        adapterKind: 'Ethernet',
+        downloadMbps: 12.4,
+        uploadMbps: 1.1,
+        adapters: [],
+      },
+    }
+    const { rerender } = render(<OverlayBar snapshot={withNetwork} state="live" settings={overlaySettings} style={{}}
+      settingsOpen={false} onOpenSettings={vi.fn()} onCloseSettings={vi.fn()} />)
+    expect(screen.getByText('NET')).toBeInTheDocument()
+    expect(screen.getByText('12↓')).toBeInTheDocument()
+    expect(screen.getByText('1.1↑')).toBeInTheDocument()
+    rerender(<OverlayBar snapshot={withNetwork} state="live" settings={settings} style={{}}
+      settingsOpen={false} onOpenSettings={vi.fn()} onCloseSettings={vi.fn()} />)
+    expect(screen.queryByText('NET')).not.toBeInTheDocument()
   })
 })
 

@@ -1,5 +1,8 @@
+import type { AppTheme } from './theme'
+
 export type ThermalState = 'unavailable' | 'normal' | 'warm' | 'hot'
 export type DisplayMode = 'full' | 'bar' | 'mini' | 'desktop'
+export type { AppTheme }
 
 export interface DisplayState {
   mode: DisplayMode
@@ -62,6 +65,20 @@ export interface TelemetrySnapshot {
     elevated: boolean
     notes: string[]
   }
+  network?: {
+    enabled: boolean
+    adapterId: string | null
+    adapterName: string | null
+    adapterKind: string | null
+    downloadMbps: number | null
+    uploadMbps: number | null
+    adapters: Array<{
+      id: string
+      name: string
+      kind: string
+      connected: boolean
+    }>
+  }
 }
 
 export interface Threshold {
@@ -81,6 +98,17 @@ export interface AppSettings {
   thermalAlerts: boolean
   display: DisplayState
   thresholds: Record<string, Threshold>
+  network: NetworkSettings
+  theme: AppTheme
+}
+
+export interface NetworkSettings {
+  enabled: boolean
+  adapterId: string | null
+  showDownload: boolean
+  showUpload: boolean
+  showInBar: boolean
+  showInMini: boolean
 }
 
 export interface MonitorConnection {

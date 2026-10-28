@@ -8,6 +8,7 @@ public sealed class HardwareMonitor : IDisposable
 {
     private readonly Computer _computer;
     private readonly WindowsMetrics _windows = new();
+    private readonly NetworkCounters _network = new();
     private readonly object _gate = new();
 
     public HardwareMonitor()
@@ -80,8 +81,22 @@ public sealed class HardwareMonitor : IDisposable
             if (!IsElevated())
                 notes.Add("Running normally. Administrator mode may expose additional motherboard or storage sensors.");
 
+            NetworkTelemetry network;
+            try
+            {
+                network = _network.Read(settings);
+            }
+            catch (Exception)
+            {
+                network = new NetworkTelemetry(settings.NetworkEnabled, null, null, null, null, null, []);
+            }
+            if (settings.NetworkEnabled && network.DownloadMbps is null && network.UploadMbps is null)
+            {
+                notes.Add("Network speed is unavailable for the selected adapter.");
+            }
+
             return new(DateTimeOffset.UtcNow, cpu, gpus, memory, drives,
-                new MonitorHealth("online", IsElevated(), notes));
+                new MonitorHealth("online", IsElevated(), notes), network);
         }
     }
 

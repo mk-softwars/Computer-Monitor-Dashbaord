@@ -4,6 +4,8 @@ public sealed record MonitorSettings
 {
     public int RefreshIntervalMs { get; init; } = 1000;
     public Dictionary<string, ThermalThreshold> Thresholds { get; init; } = ThermalThreshold.Defaults();
+    public bool NetworkEnabled { get; init; } = true;
+    public string? NetworkAdapterId { get; init; }
 
     public MonitorSettings Validated()
     {
@@ -14,7 +16,12 @@ public sealed record MonitorSettings
             if (defaults.ContainsKey(key))
                 defaults[key] = value.Validated();
         }
-        return this with { RefreshIntervalMs = interval, Thresholds = defaults };
+        return this with
+        {
+            RefreshIntervalMs = interval,
+            Thresholds = defaults,
+            NetworkAdapterId = string.IsNullOrWhiteSpace(NetworkAdapterId) ? null : NetworkAdapterId,
+        };
     }
 }
 

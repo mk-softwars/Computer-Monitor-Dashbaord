@@ -1,5 +1,7 @@
 import { GripVertical, Lock, Minus, Monitor, Pin, Settings, Unlock, X } from 'lucide-react'
 import { useEffect } from 'react'
+import { formatMbpsShort } from '../networkFormat'
+import { applyTheme } from '../theme'
 import type { AppSettings, DisplayState, TelemetrySnapshot, ThermalState } from '../types'
 import type { ConnectionState } from '../hooks/useTelemetry'
 
@@ -34,6 +36,16 @@ export function OverlayBar({
   const drive = snapshot?.storage[0]
   const display = settings.display
   const storageLabel = drive?.kind === 'HDD' ? 'HDD' : 'SSD'
+  const showNetwork = settings.network.enabled && (
+    (display.mode === 'bar' && settings.network.showInBar)
+    || (display.mode === 'mini' && settings.network.showInMini)
+  )
+  const networkSpeed = compactSpeed(
+    snapshot?.network?.downloadMbps,
+    snapshot?.network?.uploadMbps,
+    settings.network.showDownload,
+    settings.network.showUpload,
+  )
   const groups = [
     {
       label: 'CPU',
@@ -66,7 +78,17 @@ export function OverlayBar({
       secondary: formatTemperature(drive?.temperatureCelsius),
       secondaryTone: drive?.temperatureCelsius == null ? 'na' : (settings.thermalAlerts ? thermalTone(drive?.thermalState) : undefined),
     },
+    ...(showNetwork ? [{
+      label: 'NET',
+      tone: 'blue',
+      primary: networkSpeed.primary,
+      secondary: networkSpeed.secondary,
+    }] : []),
   ]
+
+  useEffect(() => {
+    applyTheme(settings.theme)
+  }, [settings.theme])
 
   useEffect(() => {
     document.documentElement.classList.add('overlay-shell')
@@ -84,14 +106,14 @@ export function OverlayBar({
       settingsOpen ? 'overlay-bar--settings' : '',
       display.locked ? 'overlay-bar--locked' : '',
       settings.reducedMotion ? 'reduced-motion' : '',
-    ].filter(Boolean).join(' ')} style={style}>
+    ].filter(Boolean).join(' ')} data-theme={settings.theme} style={style}>
       <div className="overlay-bar__panel">
         <div className="overlay-handle" title={display.locked ? 'Position locked' : 'Drag to move'}
           aria-label={display.locked ? 'Position locked' : 'Drag to move'}>
           <GripVertical />
           <i className={state === 'live' ? 'is-live' : ''} />
         </div>
-        <div className="overlay-metrics">
+        <div className={`overlay-metrics${showNetwork ? ' overlay-metrics--network' : ''}`}>
           {groups.map(group => (
             <div className={`overlay-metric overlay-metric--${group.tone}`} key={group.label}>
               <small>{group.label}</small>
@@ -193,6 +215,25 @@ function OverlaySettings({ display, onClose }: { display: DisplayState; onClose(
       </div>
     </section>
   )
+}
+
+function compactSpeed(
+  download: number | null | undefined,
+  upload: number | null | undefined,
+  showDownload: boolean,
+  showUpload: boolean,
+) {
+  const down = netLabel(download, '↓')
+  const up = netLabel(upload, '↑')
+  if (showDownload && showUpload) return { primary: down, secondary: up }
+  if (showDownload) return { primary: down, secondary: undefined }
+  if (showUpload) return { primary: up, secondary: undefined }
+  return { primary: '—', secondary: undefined }
+}
+
+function netLabel(value: number | null | undefined, arrow: string) {
+  const text = formatMbpsShort(value)
+  return text === 'N/A' ? 'N/A' : `${text}${arrow}`
 }
 
 function thermalTone(state: ThermalState | undefined) {

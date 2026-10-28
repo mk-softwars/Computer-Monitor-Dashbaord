@@ -23,6 +23,26 @@ Try:
 If temperature stays N/A after that, the sensor is unavailable to this app on
 this machine.
 
+## Network speed displays N/A or 0.0 Mbps
+
+**0.0 Mbps** means the selected Ethernet or Wi-Fi adapter had no measured
+traffic in that one-second sample. **N/A** means no usable adapter reading
+was available (disconnected, filtered virtual adapter, or counters could not
+be read).
+
+Network Monitoring uses local Windows interface byte counters. It does not run
+an internet speed test and does not need administrator rights.
+
+Try:
+
+1. Confirm **Network Monitoring** is on in Settings → Network.
+2. Set **Network Adapter** to Auto, or pick the Ethernet/Wi-Fi adapter that
+   Windows is actually using.
+3. Confirm the adapter is connected. Virtual adapters such as Hyper-V, VPN,
+   and Wi-Fi Direct are ignored on purpose.
+4. Transfer a file or open a page, then wait about one second. Idle links
+   correctly stay at 0.0 Mbps.
+
 ## GPU temperature unavailable
 
 GPU name, load, temperature, hotspot, and VRAM come from LibreHardwareMonitor
@@ -136,8 +156,9 @@ API for that, and this app does not modify Explorer.
 
 ## Windows security warnings
 
-v1.0.0 is an **unsigned** community build. SmartScreen or another filter may
-label it as unrecognized.
+Current community builds, including **v1.1.0**, are **unsigned**. SmartScreen
+or another filter may label them as unrecognized. **v1.0.0** remains on GitHub
+Releases.
 
 - Keep Windows Security enabled.
 - Prefer the official

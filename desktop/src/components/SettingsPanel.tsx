@@ -1,21 +1,25 @@
 import { X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { applyTheme, DEFAULT_THEME, normalizeTheme, type AppTheme } from '../theme'
 import type { AppSettings, DisplayState } from '../types'
+import { ThemePicker } from './ThemePicker'
 
 interface SettingsPanelProps {
   value: AppSettings
   sensorStatus: string
   displays: Array<{ id: number; label: string; primary: boolean }>
+  networkAdapters?: Array<{ id: string; name: string; kind: string; connected: boolean }>
   onChange(value: AppSettings): void | Promise<void>
   onClose(): void | Promise<void>
   onResetLayout(): void
 }
 
-const APP_VERSION = '1.0.0'
+const APP_VERSION = '1.1.0'
 const categories = [
   { id: 'general', label: 'General' },
   { id: 'display', label: 'Display' },
   { id: 'overlay', label: 'Gaming Overlay' },
+  { id: 'network', label: 'Network' },
   { id: 'appearance', label: 'Appearance' },
   { id: 'thermal', label: 'Temperature' },
   { id: 'about', label: 'About' },
@@ -50,6 +54,7 @@ export function defaultAppSettings(): AppSettings {
     launchAtStartup: false,
     uiScale: 100,
     thermalAlerts: true,
+    theme: DEFAULT_THEME,
     display: {
       mode: 'full',
       alwaysOnTop: false,
@@ -69,10 +74,18 @@ export function defaultAppSettings(): AppSettings {
       clickThroughShortcut: 'CommandOrControl+Shift+F10',
     },
     thresholds: structuredClone(defaultThresholds),
+    network: {
+      enabled: true,
+      adapterId: null,
+      showDownload: true,
+      showUpload: true,
+      showInBar: false,
+      showInMini: false,
+    },
   }
 }
 
-export function SettingsPanel({ value, sensorStatus, displays, onChange, onClose, onResetLayout }: SettingsPanelProps) {
+export function SettingsPanel({ value, sensorStatus, displays, networkAdapters = [], onChange, onClose, onResetLayout }: SettingsPanelProps) {
   const [draft, setDraft] = useState(value)
   const [category, setCategory] = useState<(typeof categories)[number]['id']>('general')
   const skip = useRef(true)
@@ -131,6 +144,10 @@ export function SettingsPanel({ value, sensorStatus, displays, onChange, onClose
   const patchDisplay = (next: Partial<DisplayState>) => setDraft(current => ({
     ...current,
     display: { ...current.display, ...next },
+  }))
+  const patchNetwork = (next: Partial<AppSettings['network']>) => setDraft(current => ({
+    ...current,
+    network: { ...current.network, ...next },
   }))
   const patchThreshold = (key: string, field: 'warm' | 'hot', number: number) =>
     setDraft(current => ({
@@ -264,8 +281,56 @@ export function SettingsPanel({ value, sensorStatus, displays, onChange, onClose
                 Reset Overlay Position
               </button>
             </>}
+            {category === 'network' && <>
+              <Row label="Network Monitoring" hint="Read this PC’s Ethernet or Wi-Fi interface counters. No speed tests.">
+                <input type="checkbox" aria-label="Network Monitoring" checked={draft.network.enabled}
+                  onChange={e => patchNetwork({ enabled: e.target.checked })} />
+              </Row>
+              <Row label="Network Adapter" hint="Auto uses one active adapter so traffic is not double-counted">
+                <select aria-label="Network Adapter" value={draft.network.adapterId ?? ''}
+                  disabled={!draft.network.enabled}
+                  onChange={e => patchNetwork({ adapterId: e.target.value || null })}>
+                  <option value="">Auto</option>
+                  {networkAdapters.map(adapter => (
+                    <option key={adapter.id} value={adapter.id}>
+                      {adapter.name} ({adapter.kind}{adapter.connected ? '' : ', disconnected'})
+                    </option>
+                  ))}
+                </select>
+              </Row>
+              <Row label="Show Download Speed" hint="Dashboard card download value in Mbps">
+                <input type="checkbox" aria-label="Show Download Speed" checked={draft.network.showDownload}
+                  disabled={!draft.network.enabled}
+                  onChange={e => patchNetwork({ showDownload: e.target.checked })} />
+              </Row>
+              <Row label="Show Upload Speed" hint="Dashboard card upload value in Mbps">
+                <input type="checkbox" aria-label="Show Upload Speed" checked={draft.network.showUpload}
+                  disabled={!draft.network.enabled}
+                  onChange={e => patchNetwork({ showUpload: e.target.checked })} />
+              </Row>
+              <Row label="Show Network Metrics in Bar" hint="Adds a compact NET cell. Off keeps the original bar width">
+                <input type="checkbox" aria-label="Show Network Metrics in Bar" checked={draft.network.showInBar}
+                  disabled={!draft.network.enabled}
+                  onChange={e => patchNetwork({ showInBar: e.target.checked })} />
+              </Row>
+              <Row label="Show Network Metrics in Mini" hint="Same compact NET cell on Mini">
+                <input type="checkbox" aria-label="Show Network Metrics in Mini" checked={draft.network.showInMini}
+                  disabled={!draft.network.enabled}
+                  onChange={e => patchNetwork({ showInMini: e.target.checked })} />
+              </Row>
+              <p className="settings-note">
+                Speeds are local interface counters, not an internet speed test. Idle links show 0.0 Mbps.
+                Unavailable adapters show N/A. Virtual adapters are ignored.
+              </p>
+            </>}
             {category === 'appearance' && <>
-              <Slider label="RGB intensity" hint="Ambient lighting strength" aria="RGB intensity"
+              <p className="settings-note">Choose a visual theme. Original RGB is the default and keeps the current look. Changes apply immediately.</p>
+              <ThemePicker value={normalizeTheme(draft.theme)} onChange={(theme: AppTheme) => {
+                applyTheme(theme)
+                patch({ theme })
+              }} />
+              <Slider label="RGB intensity" hint="Ambient lighting for Original RGB. 90s and Coding ignore this glow."
+                aria="RGB intensity"
                 min={0} max={100} value={draft.rgbIntensity} suffix="%"
                 onChange={value => patch({ rgbIntensity: value })} />
               <Row label="Reduced motion" hint="Turn off gauge and ambient animation">
@@ -299,7 +364,13 @@ export function SettingsPanel({ value, sensorStatus, displays, onChange, onClose
           </div>
         </div>
         <footer>
-          <button className="button button--ghost" onClick={() => { skip.current = true; setDraft(defaultAppSettings()); void onChange(defaultAppSettings()) }}>
+          <button className="button button--ghost" onClick={() => {
+            skip.current = true
+            const defaults = defaultAppSettings()
+            applyTheme(defaults.theme)
+            setDraft(defaults)
+            void onChange(defaults)
+          }}>
             Reset to defaults
           </button>
           <button className="button button--primary" onClick={onClose}>Done</button>

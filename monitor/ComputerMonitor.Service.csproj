@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>ComputerMonitor.Service</AssemblyName>
     <RootNamespace>ComputerMonitor</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Product>Computer Monitor Dashboard</Product>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
