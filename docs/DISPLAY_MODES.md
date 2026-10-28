@@ -2,33 +2,26 @@
 
 ## Full dashboard
 
-The standard responsive RGB dashboard shows all detected CPU, GPU, memory,
-VRAM, and storage readings. Drag empty dashboard chrome or the top header to
-move the window. Cards and buttons stay clickable. Widget position locking
-does not disable movement of the full dashboard. The close button exits the
-app unless Minimize to tray is enabled.
+The standard RGB dashboard shows all detected CPU, GPU, memory, VRAM, and
+storage readings. At the original window size the layout matches the original
+command-center design. Smaller windows use a responsive layout without changing
+the theme. Drag empty dashboard chrome or the top header to move the window.
+Cards and buttons stay clickable.
+
+**Full Dashboard** maximizes the window. **Windowed** uses the same dashboard
+at a restored size.
 
 ## Floating bar monitor
 
-The frameless horizontal monitor presents CPU usage and temperature, GPU usage
-and temperature, RAM, VRAM, and primary fixed-drive capacity and temperature
-in one row. It can be resized across monitors and optionally kept above other
-applications.
+The frameless 750×85 overlay presents CPU, GPU, RAM, VRAM, and primary storage
+in one Xbox-style row. It can stay above ordinary windows with Always on Top,
+use Overlay Opacity from 10% to 100% (default 90%), and remember its position.
 
 ## Floating mini monitor
 
-The mini monitor contains the same eight live metrics in a layout that is 25%
-smaller than the compact floating bar (540×57 instead of 720×76). Labels,
-controls, and typography are condensed while dragging, position persistence,
-opacity, locking, and always-on-top remain available.
-
-Right-click the widget or use the system tray to change mode, opacity,
-always-on-top, lock, click-through, or exit the application.
-
-The Display Mode settings include a **Panel transparency** slider from 0%
-(solid) to 80% (highly see-through). Only the glass panel background fades,
-so telemetry labels and values remain crisp. Text-only mode remains available
-when the panel background should be removed completely.
+Mini uses the same overlay chrome and metrics as Bar. Compact and normal size
+presets are available from Settings. Right-click the widget or use the system
+tray to change mode, opacity, always-on-top, lock, click-through, or exit.
 
 ## Desktop background widget
 
@@ -39,24 +32,39 @@ restart Explorer.
 
 The application therefore uses a safe desktop-level mode:
 
+- The full dashboard fills the work area.
 - The widget is removed from the taskbar.
 - Always-on-top is disabled.
+- Mouse input passes through to the desktop.
 - Regular application windows naturally cover it.
 - Explorer, desktop icons, and the Windows shell are not modified.
 
-The widget may briefly rise in normal window order while it is being moved.
-Locking it or enabling click-through prevents accidental focus afterward.
+Restore the full dashboard from the system tray.
 
-## Click-through recovery
+## Click-through
 
-When click-through is enabled on the floating bar or mini monitor, input
-passes to windows below the overlay. It takes effect after **Save settings**.
-The Settings button remains interactive. Click-through is never applied to the
-full dashboard or desktop widget. Disable it from Settings, the tray menu, or
-press **Ctrl+Shift+F10**. The shortcut also unlocks and shows the window.
+When click-through is enabled on Bar or Mini, Windows mouse input passes through
+the overlay to the application or game underneath. The overlay stays visible and
+can remain Always on Top. Native click-through uses
+`BrowserWindow.setIgnoreMouseEvents(true)` without forwarding mouse events into
+Chromium.
+
+Click-through is not applied to the full dashboard. Desktop Background always
+passes mouse input so desktop icons stay usable.
+
+Recovery:
+
+- System tray: **Disable Click-Through**
+- Global shortcut: **Ctrl+Shift+F10** by default (configurable in Settings)
+- Returning to Full Dashboard turns native click-through off
+
+Click-through will not enable if neither the tray nor the shortcut is available.
+Exclusive fullscreen games can cover the overlay; borderless windowed and
+borderless fullscreen usually work. The application does not inject input into
+games.
 
 ## Persistence and disconnected monitors
 
 Each display mode remembers its last size and position. At startup, stored
 bounds are checked against all connected monitors. If the previous monitor is
-missing, the window is safely centered on the primary display.
+missing, the window is safely placed on the primary display.

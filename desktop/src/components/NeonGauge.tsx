@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { memo, useId } from 'react'
 
 interface NeonGaugeProps {
   value: number | null
@@ -14,7 +14,7 @@ const colors = {
   violet: ['#6024FF', '#A12AFF'],
 }
 
-export function NeonGauge({ value, label, tone, size = 'large' }: NeonGaugeProps) {
+export const NeonGauge = memo(function NeonGauge({ value, label, tone, size = 'large' }: NeonGaugeProps) {
   const id = useId().replaceAll(':', '')
   const normalized = value == null ? 0 : Math.max(0, Math.min(100, value))
   const radius = 82
@@ -47,4 +47,4 @@ export function NeonGauge({ value, label, tone, size = 'large' }: NeonGaugeProps
       </div>
     </div>
   )
-}
+})

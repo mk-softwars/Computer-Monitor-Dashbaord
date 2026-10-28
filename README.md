@@ -1,6 +1,6 @@
 # Computer Monitor Dashboard
 
-A private-by-design Windows 11 hardware monitor with a neon blue, purple, pink,
+A private-by-design Windows hardware monitor with a neon blue, purple, pink,
 and cyan gaming interface. It detects the computer it is running on and shows
 real sensor readings—never generated or estimated values.
 
@@ -18,12 +18,14 @@ real sensor readings—never generated or estimated values.
 - Physical RAM utilization and module temperature when a sensor exists
 - Occupied capacity and available drive temperatures for fixed storage
 - Separate normal, warm, hot, and unavailable thermal states
-- Configurable refresh interval, thresholds, RGB intensity, and reduced motion
-- Fullscreen command-center mode
-- Optional system tray controls and minimize-to-tray behavior
-- Optional launch with Windows, disabled by default
-- Full dashboard, floating bar monitor, 25%-smaller mini monitor, and safe desktop-widget modes
-- Adjustable opacity, panel transparency, text scale, position lock, and click-through
+- Configurable refresh interval, thermal thresholds, RGB intensity, and reduced motion
+- Full Dashboard, Windowed, Bar, Mini, and Desktop Background display modes
+- Always on Top for the floating Bar and Mini overlays
+- Overlay opacity from 10% to 100% (default 90%) on Bar and Mini only
+- Click-through so games and apps underneath the overlay stay clickable
+- Click-through recovery from the system tray or a global shortcut (Ctrl+Shift+F10 by default)
+- Optional lock overlay position, preferred monitor, and remember last layout
+- Optional system tray, minimize-to-tray, and launch with Windows (off by default)
 - Local-only monitoring with no accounts, analytics, advertisements, or cloud
 
 Unsupported sensor values are displayed as `N/A`. Storage percentages represent
@@ -31,25 +33,24 @@ occupied capacity, not disk activity or transfer speed.
 
 ## Download and install
 
-1. Open the repository’s **Releases** page.
-2. Download `Computer-Monitor-Dashboard-Setup.exe`.
+Anyone can install this on Windows without Cursor, Node.js, .NET, or other
+development tools.
+
+1. Open the repository **Releases** page.
+2. Download `Computer-Monitor-Dashboard-Setup.exe` from **v1.0.0**.
 3. Run the installer and choose an installation directory.
 4. Launch **Computer Monitor Dashboard** from the Start menu or desktop.
 
-The installer creates Start menu and desktop shortcuts. The installed
-application uses a stable Windows identity and can be pinned normally to the
-taskbar.
-
-End users do not need Cursor, Node.js, Python, .NET, or any development tools.
-The installer includes the Electron desktop runtime and a self-contained .NET
-hardware-monitoring service. The service starts and stops with the application.
+The installer creates Start menu and desktop shortcuts. It includes the
+Electron desktop runtime and a self-contained .NET hardware-monitoring service.
+The service starts and stops with the application.
 
 The community build is unsigned. Windows SmartScreen may therefore show an
 “unrecognized app” warning until future releases are code-signed.
 
 ## System requirements
 
-- Windows 11 x64
+- Windows 10 or Windows 11 x64
 - A supported x64 CPU
 - Current GPU and chipset/storage drivers
 - Approximately 350 MB free disk space
@@ -84,9 +85,13 @@ network throughput, storage transfer speed, and FPS.
 - **GPU readings are unavailable:** install the current vendor GPU driver.
 - **Additional storage sensors are needed:** try one elevated launch. Return to
   normal-user mode if no additional readings appear.
+- **Click-through is on and the overlay cannot be clicked:** use the tray item
+  **Disable Click-Through**, or press **Ctrl+Shift+F10** (or the shortcut chosen
+  in Settings).
+- **An exclusive fullscreen game covers the overlay:** use borderless windowed
+  or borderless fullscreen. The overlay does not inject input into games.
 - **SmartScreen warns about the installer:** verify that the file came from this
-  repository’s Releases page. Public releases should be code-signed when a
-  certificate is available.
+  repository’s Releases page.
 
 ## Development
 

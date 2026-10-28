@@ -13,6 +13,15 @@ export interface DisplayState {
   textScale: number
   sizePreset: 'compact' | 'normal' | 'custom'
   launchLastMode: boolean
+  preferredDisplayId: number | null
+  defaultMode: DisplayMode
+  rememberPosition: boolean
+  overlayAnchor: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
+  clickThroughShortcut: string
+  clickThroughApplied?: boolean
+  clickThroughReady?: boolean
+  clickThroughShortcutLabel?: string
+  clickThroughError?: string
 }
 
 export interface TelemetrySnapshot {
@@ -68,6 +77,8 @@ export interface AppSettings {
   showTrayIcon: boolean
   minimizeToTray: boolean
   launchAtStartup: boolean
+  uiScale: number
+  thermalAlerts: boolean
   display: DisplayState
   thresholds: Record<string, Threshold>
 }
@@ -89,6 +100,8 @@ declare global {
       minimize(): Promise<void>
       toggleMaximize(): Promise<boolean>
       close(): Promise<void>
+      prepareSettings(): Promise<boolean>
+      restoreAfterSettings(): Promise<boolean>
       getDesktopPreferences(): Promise<{
         launchAtStartup: boolean
         trayEnabled: boolean
@@ -98,7 +111,13 @@ declare global {
       setDisplayState(patch: Partial<DisplayState>): Promise<DisplayState>
       setPointerPassthrough(passthrough: boolean): void
       setSizePreset(preset: 'compact' | 'normal'): Promise<{ width: number; height: number } | null>
+      resetOverlayPosition(): Promise<{ x: number; y: number; width: number; height: number } | null>
+      resetWindowLayout(): Promise<boolean>
+      getWindowChrome(): Promise<{ maximized: boolean; fullscreen: boolean }>
+      setMaximized(enabled: boolean): Promise<boolean>
+      listDisplays(): Promise<Array<{ id: number; label: string; primary: boolean }>>
       onDisplayStateChanged(callback: (state: DisplayState) => void): () => void
+      onWindowChromeChanged(callback: (chrome: { maximized: boolean; fullscreen: boolean }) => void): () => void
       onOpenSettings(callback: () => void): () => void
       onMonitorChanged(callback: () => void): () => void
     }

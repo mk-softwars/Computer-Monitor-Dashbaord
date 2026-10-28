@@ -3,6 +3,7 @@ node_modules/
 desktop/node_modules/
 desktop/dist/
 desktop/dist-electron/
+desktop/main.js
 artifacts/
 **/bin/
 **/obj/

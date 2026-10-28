@@ -1,72 +1,68 @@
-import { Cpu, Database, Expand, Gauge, Lock, Maximize2, MemoryStick, Minus, Settings, Unlock, X, Zap } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Cpu, Database, Expand, Gauge, LayoutDashboard, Maximize2, MemoryStick, Minus, Monitor, PictureInPicture2, Settings, Square, X, Zap } from 'lucide-react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { NeonGauge } from './components/NeonGauge'
-import { SettingsPanel } from './components/SettingsPanel'
+import { OverlayBar } from './components/OverlayBar'
+import { defaultAppSettings, SettingsPanel } from './components/SettingsPanel'
 import { ThermalStatus } from './components/ThermalStatus'
+import { useDashboardLayout } from './hooks/useDashboardLayout'
 import { useTelemetry, type ConnectionState } from './hooks/useTelemetry'
-import type { AppSettings, DisplayState, TelemetrySnapshot, ThermalState } from './types'
-
-const defaultSettings: AppSettings = {
-  refreshIntervalMs: 1000,
-  rgbIntensity: 75,
-  reducedMotion: false,
-  fullscreen: false,
-  showTrayIcon: true,
-  minimizeToTray: false,
-  launchAtStartup: false,
-  display: {
-    mode: 'full',
-    alwaysOnTop: false,
-    locked: false,
-    clickThrough: false,
-    opacity: 1,
-    panelTransparent: false,
-    glassBlur: false,
-    subtleFrame: true,
-    textScale: 100,
-    sizePreset: 'normal',
-    launchLastMode: true,
-  },
-  thresholds: {
-    cpu: { warm: 75, hot: 90 },
-    gpu: { warm: 75, hot: 88 },
-    gpuHotspot: { warm: 90, hot: 105 },
-    ssd: { warm: 55, hot: 70 },
-    hdd: { warm: 45, hot: 55 },
-    ram: { warm: 60, hot: 75 },
-  },
-}
+import type { AppSettings, DisplayState, ThermalState } from './types'
 
 function loadSettings(): AppSettings {
   try {
     const stored = localStorage.getItem('computer-monitor-settings')
-    if (!stored) return defaultSettings
+    if (!stored) return defaultAppSettings()
     const parsed = JSON.parse(stored) as Partial<AppSettings>
+    const defaults = defaultAppSettings()
     return {
-      ...defaultSettings,
+      ...defaults,
       ...parsed,
-      display: { ...defaultSettings.display, ...parsed.display },
-      thresholds: { ...defaultSettings.thresholds, ...parsed.thresholds },
+      display: { ...defaults.display, ...parsed.display },
+      thresholds: { ...defaults.thresholds, ...parsed.thresholds },
     }
   } catch {
-    return defaultSettings
+    return defaultAppSettings()
   }
 }
 
 export default function App() {
   const { snapshot, state, connection } = useTelemetry()
+  const { ref, layout } = useDashboardLayout()
   const [settings, setSettings] = useState(loadSettings)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [chrome, setChrome] = useState({ maximized: false, fullscreen: false })
+  const [displays, setDisplays] = useState<Array<{ id: number; label: string; primary: boolean }>>([])
   const gpu = snapshot?.gpus[0]
+  const overlay = settings.display.mode === 'bar' || settings.display.mode === 'mini'
   const lastUpdate = useMemo(() => snapshot
     ? new Date(snapshot.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : '--:--:--', [snapshot])
 
   useEffect(() => {
+    document.documentElement.classList.toggle('reduced-motion', settings.reducedMotion)
+    const syncHidden = () => document.documentElement.classList.toggle('is-hidden', document.hidden)
+    syncHidden()
+    document.addEventListener('visibilitychange', syncHidden)
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === ',') {
+        event.preventDefault()
+        void openSettings()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('visibilitychange', syncHidden)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [settings.reducedMotion])
+
+  useEffect(() => {
     void window.computerMonitor?.setTrayEnabled(settings.showTrayIcon)
       .then(() => window.computerMonitor?.setMinimizeToTray(settings.minimizeToTray))
+    void window.computerMonitor?.listDisplays?.().then(list => { if (list) setDisplays(list) })
+    void window.computerMonitor?.getWindowChrome?.().then(next => { if (next) setChrome(next) })
     const syncDisplay = (display: DisplayState) => setSettings(current => {
-      const next = { ...current, display }
+      const next = { ...current, display: { ...current.display, ...display } }
       localStorage.setItem('computer-monitor-settings', JSON.stringify(next))
       return next
     })
@@ -77,43 +73,32 @@ export default function App() {
       }
     })
     const stopDisplayListener = window.computerMonitor?.onDisplayStateChanged(syncDisplay)
-    const stopSettingsListener = window.computerMonitor?.onOpenSettings(() => {
-      void window.computerMonitor?.setDisplayState({ clickThrough: false })
-      setSettingsOpen(true)
-    })
+    const stopChrome = window.computerMonitor?.onWindowChromeChanged?.(setChrome)
+    const stopSettingsListener = window.computerMonitor?.onOpenSettings(() => { void openSettings() })
     return () => {
       stopDisplayListener?.()
+      stopChrome?.()
       stopSettingsListener?.()
     }
-    // Desktop preferences are synchronized by Electron after startup.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    const overlay = settings.display.mode === 'bar' || settings.display.mode === 'mini'
-    if (!overlay || !settings.display.clickThrough) {
-      window.computerMonitor?.setPointerPassthrough(false)
-      return
-    }
-    let lastPassthrough: boolean | null = null
-    const updatePointerPassthrough = (event: MouseEvent) => {
-      const target = document.elementFromPoint(event.clientX, event.clientY)
-      const passthrough = !target?.closest('[data-click-through-control]')
-      if (passthrough === lastPassthrough) return
-      lastPassthrough = passthrough
-      window.computerMonitor?.setPointerPassthrough(passthrough)
-    }
-    window.addEventListener('mousemove', updatePointerPassthrough)
-    return () => {
-      window.removeEventListener('mousemove', updatePointerPassthrough)
-      window.computerMonitor?.setPointerPassthrough(false)
-    }
-  }, [settings.display.clickThrough])
+  const openSettings = async () => {
+    window.computerMonitor?.setPointerPassthrough(false)
+    await window.computerMonitor?.prepareSettings()
+    setSettingsOpen(true)
+  }
 
-  const saveSettings = async (next: AppSettings) => {
-    const validated: AppSettings = {
+  const closeSettings = async () => {
+    setSettingsOpen(false)
+    await window.computerMonitor?.restoreAfterSettings()
+  }
+
+  const saveSettings = useCallback(async (next: AppSettings) => {
+    let validated: AppSettings = {
       ...next,
       refreshIntervalMs: Math.max(500, Math.min(10000, next.refreshIntervalMs)),
+      uiScale: 100,
       minimizeToTray: next.showTrayIcon && next.minimizeToTray,
     }
     setSettings(validated)
@@ -123,8 +108,13 @@ export default function App() {
     await window.computerMonitor?.setTrayEnabled(validated.showTrayIcon)
     await window.computerMonitor?.setMinimizeToTray(validated.minimizeToTray)
     await window.computerMonitor?.setLaunchAtStartup(validated.launchAtStartup)
-    await window.computerMonitor?.setDisplayState(validated.display)
-    if (validated.display.sizePreset !== 'custom' && validated.display.mode !== 'full') {
+    const applied = await window.computerMonitor?.setDisplayState(validated.display)
+    if (applied) {
+      validated = { ...validated, display: { ...validated.display, ...applied } }
+      setSettings(validated)
+      localStorage.setItem('computer-monitor-settings', JSON.stringify(validated))
+    }
+    if (validated.display.sizePreset !== 'custom' && (validated.display.mode === 'bar' || validated.display.mode === 'mini')) {
       await window.computerMonitor?.setSizePreset(validated.display.sizePreset)
     }
     if (connection) {
@@ -141,50 +131,68 @@ export default function App() {
         // The WebSocket reconnect loop reports service availability.
       }
     }
-  }
+  }, [connection])
 
-  const previewSettings = (next: AppSettings) => {
-    void window.computerMonitor?.setDisplayState(next.display)
-    if (next.display.sizePreset !== 'custom' && next.display.mode !== 'full') {
-      void window.computerMonitor?.setSizePreset(next.display.sizePreset)
+  const applyToolbarMode = (id: ToolbarMode) => {
+    if (id === 'windowed') {
+      void window.computerMonitor?.setDisplayState({ mode: 'full' })
+      void window.computerMonitor?.setFullscreen(false)
+      void window.computerMonitor?.setMaximized?.(false)
+      return
     }
+    if (id === 'full') {
+      void window.computerMonitor?.setDisplayState({ mode: 'full' })
+      void window.computerMonitor?.setMaximized?.(true)
+      return
+    }
+    void window.computerMonitor?.setDisplayState({ mode: id })
   }
 
-  const displayStyle = {
+  const overlayStyle = {
     '--rgb-intensity': settings.rgbIntensity / 100,
-    '--panel-opacity': settings.display.panelTransparent
-      ? 0
-      : Math.max(.25, Math.min(1, settings.display.opacity)),
+    '--panel-opacity': Math.max(.1, Math.min(1, settings.display.opacity)),
     '--text-scale': settings.display.textScale / 100,
   } as React.CSSProperties
+  const dashboardStyle = {
+    '--rgb-intensity': settings.rgbIntensity / 100,
+  } as React.CSSProperties
 
-  if (settings.display.mode !== 'full') {
-    return <MiniMonitor snapshot={snapshot} state={state} settings={settings}
-      style={displayStyle} onOpenSettings={() => {
-        void window.computerMonitor?.setDisplayState({ mode: 'full', clickThrough: false })
-        setSettingsOpen(true)
-      }}
-      settingsPanel={settingsOpen
-        ? <SettingsPanel value={settings} onSave={saveSettings} onPreview={previewSettings} onClose={() => setSettingsOpen(false)} />
-        : null} />
+  if (overlay) {
+    return <OverlayBar snapshot={snapshot} state={state} settings={settings}
+      style={overlayStyle} settingsOpen={settingsOpen}
+      onOpenSettings={() => void openSettings()}
+      onCloseSettings={() => void closeSettings()} />
   }
 
+  const toolbarMode = activeToolbarMode(settings.display.mode, chrome.maximized, chrome.fullscreen)
+  const narrowToolbar = layout === 'small' || layout === 'compact'
+
   return (
-    <main className={settings.reducedMotion ? 'app reduced-motion' : 'app'}
-      style={displayStyle}>
+    <main ref={ref} data-layout={layout}
+      className={`app${settings.display.mode === 'desktop' ? ' app--desktop' : ''}${settings.reducedMotion ? ' reduced-motion' : ''}`}
+      style={dashboardStyle}>
       <div className="ambient" aria-hidden><i /><i /><i /></div>
-      <header className="topbar">
-        <div className="brand">
+      <header className="topbar" onDoubleClick={(event) => {
+        if ((event.target as HTMLElement).closest('.topbar__actions, .mode-switch, .mode-select')) return
+        void window.computerMonitor?.toggleMaximize()
+      }}>
+        <div className="brand" title="Drag to move">
           <div className="brand__mark"><Zap /></div>
-          <div><span className="eyebrow">SYSTEM TELEMETRY</span><h1>COMPUTER <b>MONITOR DASHBOARD</b></h1></div>
+          <div>
+            <span className="eyebrow">SYSTEM TELEMETRY</span>
+            <h1>COMPUTER <b>MONITOR DASHBOARD</b></h1>
+          </div>
         </div>
+        <ModeSwitcher mode={toolbarMode} compact={narrowToolbar} onChange={applyToolbarMode} />
         <div className="topbar__actions">
-          <div className={`live-status live-status--${state}`}>
+          <div className={`live-status live-status--${state}`} title={statusDetail(state, lastUpdate)}>
             <i /><span>{state === 'live' ? 'LIVE MONITORING' : state.toUpperCase()}</span>
             <small>{lastUpdate}</small>
           </div>
-          <button className="icon-button" onClick={() => void window.computerMonitor?.toggleFullscreen()} aria-label="Toggle fullscreen"><Expand /></button>
-          <button className="icon-button" data-click-through-control onClick={() => setSettingsOpen(true)} aria-label="Open settings"><Settings /></button>
+          <button className="icon-button" title="Fullscreen" aria-label="Toggle fullscreen"
+            onClick={() => void window.computerMonitor?.toggleFullscreen()}><Expand /></button>
+          <button className="icon-button" data-click-through-control title="Settings (Ctrl+,)" aria-label="Open settings"
+            onClick={() => void openSettings()}><Settings /></button>
           <WindowControls />
         </div>
       </header>
@@ -199,7 +207,6 @@ export default function App() {
             <MetricLine label="Sensor access" value={snapshot?.cpu.temperatureCelsius == null ? 'LIMITED' : 'ACTIVE'} />
           </div>
         </HardwareCard>
-
         <HardwareCard title="GRAPHICS PROCESSING UNIT" name={gpu?.name ?? 'No supported GPU detected'} tone="purple" icon={<Gauge />}>
           <NeonGauge value={gpu?.usagePercent ?? null} label="GPU LOAD" tone="purple" />
           <div className="card__telemetry">
@@ -248,93 +255,93 @@ export default function App() {
       )}
 
       {snapshot?.health.notes.length ? (
-        <aside className="sensor-note">{snapshot.health.notes.join(' ')}</aside>
+        <aside className="sensor-note" title={snapshot.health.notes.join(' ')}>{snapshot.health.notes.join(' ')}</aside>
       ) : null}
 
-      {settingsOpen && <SettingsPanel value={settings} onSave={saveSettings} onPreview={previewSettings} onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && <SettingsPanel value={settings} sensorStatus={statusDetail(state, lastUpdate)}
+        displays={displays} onChange={saveSettings} onClose={closeSettings}
+        onResetLayout={() => void window.computerMonitor?.resetWindowLayout?.()} />}
     </main>
   )
 }
 
-function MiniMonitor({ snapshot, state, settings, style, onOpenSettings, settingsPanel }: {
-  snapshot: TelemetrySnapshot | null
-  state: ConnectionState
-  settings: AppSettings
-  style: React.CSSProperties
-  onOpenSettings(): void
-  settingsPanel: React.ReactNode
+type ToolbarMode = 'windowed' | 'full' | 'bar' | 'mini' | 'desktop'
+
+function activeToolbarMode(mode: DisplayState['mode'], maximized: boolean, fullscreen: boolean): ToolbarMode {
+  if (mode === 'bar' || mode === 'mini' || mode === 'desktop') return mode
+  return maximized || fullscreen ? 'full' : 'windowed'
+}
+
+const modeOptions: Array<{ id: ToolbarMode; label: string; menu: string; title: string; icon: typeof Monitor }> = [
+  { id: 'windowed', label: 'Windowed', menu: 'Windowed', title: 'Resizable dashboard window', icon: Square },
+  { id: 'full', label: 'Full', menu: 'Full', title: 'Maximized full dashboard', icon: LayoutDashboard },
+  { id: 'bar', label: 'Bar', menu: 'Bar', title: 'Compact horizontal monitoring bar', icon: Monitor },
+  { id: 'mini', label: 'Mini', menu: 'Mini', title: 'Floating mini monitor', icon: PictureInPicture2 },
+  { id: 'desktop', label: 'Desktop', menu: 'Desktop Background', title: 'Full dashboard behind other windows', icon: Maximize2 },
+]
+
+function ModeSwitcher({ mode, compact, onChange }: {
+  mode: ToolbarMode; compact: boolean; onChange(mode: ToolbarMode): void
 }) {
-  const gpu = snapshot?.gpus[0]
-  const drive = snapshot?.storage[0]
-  const storageLabel = drive?.kind?.toUpperCase() || 'SSD'
-  const display = settings.display
-  const isMini = display.mode === 'mini'
-  const metrics = [
-    { label: 'CPU', shortLabel: 'CPU', value: formatPercent(snapshot?.cpu.usagePercent), tone: 'blue' },
-    { label: 'CPU TEMP', shortLabel: 'CPU°', value: formatTemperature(snapshot?.cpu.temperatureCelsius), tone: thermalTone(snapshot?.cpu.thermalState) },
-    { label: 'GPU', shortLabel: 'GPU', value: formatPercent(gpu?.usagePercent), tone: 'purple' },
-    { label: 'GPU TEMP', shortLabel: 'GPU°', value: formatTemperature(gpu?.temperatureCelsius), tone: thermalTone(gpu?.thermalState) },
-    { label: 'RAM', shortLabel: 'RAM', value: formatPercent(snapshot?.memory.usagePercent), tone: 'cyan' },
-    { label: 'VRAM', shortLabel: 'VRAM', value: formatPercent(gpu?.vramUsagePercent), tone: 'pink' },
-    { label: storageLabel, shortLabel: storageLabel, value: formatPercent(drive?.usedPercent), tone: 'violet' },
-    { label: `${storageLabel} TEMP`, shortLabel: `${storageLabel}°`, value: formatTemperature(drive?.temperatureCelsius), tone: thermalTone(drive?.thermalState) },
-  ]
+  if (compact) {
+    return (
+      <select className="mode-select" aria-label="Display mode" title="Display mode" value={mode}
+        onChange={event => onChange(event.target.value as ToolbarMode)}>
+        {modeOptions.map(option => <option key={option.id} value={option.id}>{option.menu}</option>)}
+      </select>
+    )
+  }
   return (
-    <main className={[
-      'mini-shell',
-      `mini-shell--${display.mode}`,
-      display.panelTransparent ? 'mini-shell--transparent' : '',
-      display.glassBlur ? 'mini-shell--glass' : '',
-      display.subtleFrame ? 'mini-shell--framed' : '',
-      settings.reducedMotion ? 'reduced-motion' : '',
-    ].filter(Boolean).join(' ')} style={style}>
-      <div className="mini-brand"><i className={state === 'live' ? 'is-live' : ''} /><span>{isMini ? 'M' : 'CMD'}</span></div>
-      <div className="mini-metrics">
-        {metrics.map(metric => (
-          <div className={`mini-metric mini-metric--${metric.tone}`} key={metric.label}>
-            <small title={metric.label}>{isMini ? metric.shortLabel : metric.label}</small><strong>{metric.value}</strong>
-          </div>
-        ))}
-      </div>
-      <div className="mini-actions">
-        <button onClick={() => void window.computerMonitor?.setDisplayState({ locked: !display.locked })}
-          aria-label={display.locked ? 'Unlock position' : 'Lock position'}>
-          {display.locked ? <Lock /> : <Unlock />}
-        </button>
-        <button data-click-through-control onClick={onOpenSettings} aria-label="Open settings"><Settings /></button>
-        <button onClick={() => void window.computerMonitor?.setDisplayState({ mode: 'full' })} aria-label="Open full dashboard"><Maximize2 /></button>
-        <WindowControls compact />
-      </div>
-      {settingsPanel}
-    </main>
+    <div className="mode-switch" role="tablist" aria-label="Display mode">
+      {modeOptions.map(option => {
+        const Icon = option.icon
+        return (
+          <button key={option.id} type="button" role="tab" aria-selected={mode === option.id} title={option.title}
+            className={mode === option.id ? 'is-active' : ''}
+            onClick={() => onChange(option.id)}>
+            <Icon />
+            <span>{option.label}</span>
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
-function WindowControls({ compact = false }: { compact?: boolean }) {
-  return <div className={`window-controls${compact ? ' window-controls--compact' : ''}`}>
-    <button onClick={() => void window.computerMonitor?.minimize()} aria-label="Minimize"><Minus /></button>
-    {!compact && <button onClick={() => void window.computerMonitor?.toggleMaximize()} aria-label="Maximize or restore"><Maximize2 /></button>}
-    <button className="window-controls__close" onClick={() => void window.computerMonitor?.close()} aria-label="Close"><X /></button>
+function WindowControls() {
+  return <div className="window-controls">
+    <button title="Minimize" aria-label="Minimize" onClick={() => void window.computerMonitor?.minimize()}><Minus /></button>
+    <button title="Maximize" aria-label="Maximize or restore"
+      onClick={() => void window.computerMonitor?.toggleMaximize()}><Maximize2 /></button>
+    <button className="window-controls__close" title="Close" aria-label="Close"
+      onClick={() => void window.computerMonitor?.close()}><X /></button>
   </div>
 }
 
-function HardwareCard({ title, name, tone, icon, children }: {
+function statusDetail(state: ConnectionState, lastUpdate: string) {
+  if (state === 'live') return `Sensors updating · ${lastUpdate}`
+  if (state === 'reconnecting') return 'Trying to reach the local sensor service'
+  if (state === 'offline') return 'Sensor service is not connected'
+  return 'Starting the local sensor service'
+}
+
+const HardwareCard = memo(function HardwareCard({ title, name, tone, icon, children }: {
   title: string; name: string; tone: string; icon: React.ReactNode; children: React.ReactNode
 }) {
   return <article className={`hardware-card hardware-card--${tone}`}>
-    <header><div className="card__icon">{icon}</div><div><span className="eyebrow">{title}</span><h2>{name}</h2></div></header>
+    <header><div className="card__icon">{icon}</div><div><span className="eyebrow">{title}</span><h2 title={name}>{name}</h2></div></header>
     <div className="hardware-card__body">{children}</div>
   </article>
-}
+})
 
-function CompactCard({ title, subtitle, tone, icon, children }: {
+const CompactCard = memo(function CompactCard({ title, subtitle, tone, icon, children }: {
   title: string; subtitle: string; tone: string; icon: React.ReactNode; children: React.ReactNode
 }) {
   return <article className={`compact-card compact-card--${tone}`}>
     <header><div className="card__icon">{icon}</div><div><span className="eyebrow">{title}</span><h3 title={subtitle}>{subtitle}</h3></div></header>
     <div className="compact-card__body">{children}</div>
   </article>
-}
+})
 
 function MetricLine({ label, value }: { label: string; value: string }) {
   return <div className="metric-line"><span>{label}</span><strong>{value}</strong></div>
@@ -342,14 +349,6 @@ function MetricLine({ label, value }: { label: string; value: string }) {
 
 function formatPercent(value: number | null | undefined) {
   return value == null ? 'N/A' : `${Math.round(value)}%`
-}
-
-function formatTemperature(value: number | null | undefined) {
-  return value == null ? 'N/A' : `${Math.round(value)}°`
-}
-
-function thermalTone(state: ThermalState | undefined) {
-  return state === 'hot' ? 'hot' : state === 'warm' ? 'warm' : 'cyan'
 }
 
 export function thermalClass(state: ThermalState) {

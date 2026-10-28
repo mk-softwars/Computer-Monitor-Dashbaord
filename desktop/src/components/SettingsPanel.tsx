@@ -1,13 +1,25 @@
 import { X } from 'lucide-react'
-import { useState } from 'react'
-import type { AppSettings } from '../types'
+import { useEffect, useRef, useState } from 'react'
+import type { AppSettings, DisplayState } from '../types'
 
 interface SettingsPanelProps {
   value: AppSettings
-  onSave(value: AppSettings): void
-  onPreview?(value: AppSettings): void
-  onClose(): void
+  sensorStatus: string
+  displays: Array<{ id: number; label: string; primary: boolean }>
+  onChange(value: AppSettings): void | Promise<void>
+  onClose(): void | Promise<void>
+  onResetLayout(): void
 }
+
+const APP_VERSION = '1.0.0'
+const categories = [
+  { id: 'general', label: 'General' },
+  { id: 'display', label: 'Display' },
+  { id: 'overlay', label: 'Gaming Overlay' },
+  { id: 'appearance', label: 'Appearance' },
+  { id: 'thermal', label: 'Temperature' },
+  { id: 'about', label: 'About' },
+] as const
 
 const thresholdLabels: Record<string, string> = {
   cpu: 'CPU package',
@@ -18,172 +30,304 @@ const thresholdLabels: Record<string, string> = {
   ram: 'Memory modules',
 }
 
-function transparencyPercent(opacity: number) {
-  return Math.round((1 - Math.max(.2, Math.min(1, opacity))) * 100)
+const defaultThresholds: AppSettings['thresholds'] = {
+  cpu: { warm: 75, hot: 90 },
+  gpu: { warm: 75, hot: 88 },
+  gpuHotspot: { warm: 90, hot: 105 },
+  ssd: { warm: 55, hot: 70 },
+  hdd: { warm: 45, hot: 55 },
+  ram: { warm: 60, hot: 75 },
 }
 
-export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPanelProps) {
+export function defaultAppSettings(): AppSettings {
+  return {
+    refreshIntervalMs: 1000,
+    rgbIntensity: 75,
+    reducedMotion: false,
+    fullscreen: false,
+    showTrayIcon: true,
+    minimizeToTray: false,
+    launchAtStartup: false,
+    uiScale: 100,
+    thermalAlerts: true,
+    display: {
+      mode: 'full',
+      alwaysOnTop: false,
+      locked: false,
+      clickThrough: false,
+      opacity: .9,
+      panelTransparent: false,
+      glassBlur: false,
+      subtleFrame: true,
+      textScale: 100,
+      sizePreset: 'normal',
+      launchLastMode: true,
+      preferredDisplayId: null,
+      defaultMode: 'full',
+      rememberPosition: true,
+      overlayAnchor: 'top-right',
+      clickThroughShortcut: 'CommandOrControl+Shift+F10',
+    },
+    thresholds: structuredClone(defaultThresholds),
+  }
+}
+
+export function SettingsPanel({ value, sensorStatus, displays, onChange, onClose, onResetLayout }: SettingsPanelProps) {
   const [draft, setDraft] = useState(value)
-  const updateThreshold = (key: string, field: 'warm' | 'hot', number: number) =>
+  const [category, setCategory] = useState<(typeof categories)[number]['id']>('general')
+  const skip = useRef(true)
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  useEffect(() => {
+    setDraft(current => {
+      const display = value.display
+      if (
+        current.display.clickThrough === display.clickThrough
+        && current.display.clickThroughShortcut === display.clickThroughShortcut
+        && current.display.clickThroughError === display.clickThroughError
+        && current.display.clickThroughReady === display.clickThroughReady
+        && current.display.clickThroughApplied === display.clickThroughApplied
+        && current.display.clickThroughShortcutLabel === display.clickThroughShortcutLabel
+      ) return current
+      return {
+        ...current,
+        display: {
+          ...current.display,
+          clickThrough: display.clickThrough,
+          clickThroughShortcut: display.clickThroughShortcut,
+          clickThroughError: display.clickThroughError,
+          clickThroughReady: display.clickThroughReady,
+          clickThroughApplied: display.clickThroughApplied,
+          clickThroughShortcutLabel: display.clickThroughShortcutLabel,
+        },
+      }
+    })
+  }, [
+    value.display.clickThrough,
+    value.display.clickThroughShortcut,
+    value.display.clickThroughError,
+    value.display.clickThroughReady,
+    value.display.clickThroughApplied,
+    value.display.clickThroughShortcutLabel,
+  ])
+
+  useEffect(() => {
+    if (skip.current) {
+      skip.current = false
+      return
+    }
+    const timer = window.setTimeout(() => { void onChange(draft) }, 160)
+    return () => window.clearTimeout(timer)
+  }, [draft, onChange])
+
+  const patch = (next: Partial<AppSettings>) => setDraft(current => ({ ...current, ...next }))
+  const patchDisplay = (next: Partial<DisplayState>) => setDraft(current => ({
+    ...current,
+    display: { ...current.display, ...next },
+  }))
+  const patchThreshold = (key: string, field: 'warm' | 'hot', number: number) =>
     setDraft(current => ({
       ...current,
-      thresholds: {
-        ...current.thresholds,
-        [key]: { ...current.thresholds[key], [field]: number },
-      },
+      thresholds: { ...current.thresholds, [key]: { ...current.thresholds[key], [field]: number } },
     }))
-  const updateDisplay = (patch: Partial<AppSettings['display']>, preview = true) => setDraft(current => {
-    const next = { ...current, display: { ...current.display, ...patch } }
-    if (preview) onPreview?.(next)
-    return next
-  })
 
   return (
-    <div className="settings-backdrop" data-click-through-control role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose()
-    }}>
+    <div className="settings-backdrop" data-click-through-control role="presentation"
+      onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
       <section className="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <header>
           <div><span className="eyebrow">SYSTEM CONFIGURATION</span><h2 id="settings-title">Monitor settings</h2></div>
-          <button className="icon-button" onClick={onClose} aria-label="Close settings"><X /></button>
+          <button className="icon-button" onClick={onClose} title="Close settings" aria-label="Close settings"><X /></button>
         </header>
-
-        <label className="setting-row">
-          <span><strong>Refresh interval</strong><small>Sensor sampling frequency</small></span>
-          <select value={draft.refreshIntervalMs} onChange={e => setDraft({ ...draft, refreshIntervalMs: Number(e.target.value) })}>
-            <option value={500}>0.5 seconds</option>
-            <option value={1000}>1 second</option>
-            <option value={2000}>2 seconds</option>
-            <option value={5000}>5 seconds</option>
-          </select>
-        </label>
-        <label className="setting-row setting-row--slider">
-          <span><strong>RGB intensity</strong><small>Ambient lighting strength</small></span>
-          <input type="range" min="0" max="100" value={draft.rgbIntensity}
-            onChange={e => setDraft({ ...draft, rgbIntensity: Number(e.target.value) })} />
-          <output>{draft.rgbIntensity}%</output>
-        </label>
-        <label className="setting-row">
-          <span><strong>Reduced motion</strong><small>Disable gauge and ambient animation</small></span>
-          <input type="checkbox" checked={draft.reducedMotion}
-            onChange={e => setDraft({ ...draft, reducedMotion: e.target.checked })} />
-        </label>
-        <label className="setting-row">
-          <span><strong>Launch fullscreen</strong><small>Use immersive command-center mode</small></span>
-          <input type="checkbox" checked={draft.fullscreen}
-            onChange={e => setDraft({ ...draft, fullscreen: e.target.checked })} />
-        </label>
-        <label className="setting-row">
-          <span><strong>System tray icon</strong><small>Open or exit the dashboard from the tray</small></span>
-          <input type="checkbox" checked={draft.showTrayIcon}
-            onChange={e => setDraft({ ...draft, showTrayIcon: e.target.checked, minimizeToTray: e.target.checked ? draft.minimizeToTray : false })} />
-        </label>
-        <label className="setting-row">
-          <span><strong>Minimize to tray</strong><small>Hide the window instead of minimizing it</small></span>
-          <input type="checkbox" checked={draft.minimizeToTray} disabled={!draft.showTrayIcon}
-            onChange={e => setDraft({ ...draft, minimizeToTray: e.target.checked })} />
-        </label>
-        <label className="setting-row">
-          <span><strong>Launch with Windows</strong><small>Start automatically after you sign in</small></span>
-          <input type="checkbox" checked={draft.launchAtStartup}
-            onChange={e => setDraft({ ...draft, launchAtStartup: e.target.checked })} />
-        </label>
-
-        <div className="thresholds display-settings">
-          <h3>Display mode</h3>
-          <p>Switch between the full dashboard and compact Windows widgets.</p>
-          <label className="setting-row">
-            <span><strong>Mode</strong><small>Choose the active dashboard layout</small></span>
-            <select value={draft.display.mode}
-              onChange={e => updateDisplay({ mode: e.target.value as AppSettings['display']['mode'] }, false)}>
-              <option value="full">Full Dashboard</option>
-              <option value="bar">Floating Bar Monitor</option>
-              <option value="mini">Floating Mini Monitor</option>
-              <option value="desktop">Desktop Background Widget</option>
-            </select>
-          </label>
-          <label className="setting-row setting-row--slider">
-            <span><strong>Panel transparency</strong><small>0% is solid; 80% is highly see-through. Text stays readable.</small></span>
-            <input type="range" min="0" max="80" step="1" aria-label="Panel transparency"
-              value={transparencyPercent(draft.display.opacity)}
-              onChange={e => updateDisplay({
-                opacity: 1 - Number(e.target.value) / 100,
-                panelTransparent: false,
-              })} />
-            <output>{transparencyPercent(draft.display.opacity)}%</output>
-          </label>
-          <label className="setting-row setting-row--slider">
-            <span><strong>Text size</strong><small>Scale compact telemetry values</small></span>
-            <input type="range" min="70" max="160" value={draft.display.textScale}
-              onChange={e => updateDisplay({ textScale: Number(e.target.value) })} />
-            <output>{draft.display.textScale}%</output>
-          </label>
-          <label className="setting-row">
-            <span><strong>Widget size</strong><small>Custom size remains freely resizable</small></span>
-            <select value={draft.display.sizePreset}
-              onChange={e => updateDisplay({ sizePreset: e.target.value as AppSettings['display']['sizePreset'] })}>
-              <option value="compact">Compact</option>
-              <option value="normal">Normal</option>
-              <option value="custom">Custom</option>
-            </select>
-          </label>
-          <label className="setting-row">
-            <span><strong>Always on top</strong><small>Keep the floating monitor above other apps</small></span>
-            <input type="checkbox" checked={draft.display.alwaysOnTop}
-              onChange={e => updateDisplay({ alwaysOnTop: e.target.checked })} />
-          </label>
-          <label className="setting-row">
-            <span><strong>Lock widget position</strong><small>Prevent movement and resizing in compact widget modes</small></span>
-            <input type="checkbox" checked={draft.display.locked}
-              onChange={e => updateDisplay({ locked: e.target.checked })} />
-          </label>
-          <label className="setting-row">
-            <span><strong>Click through</strong><small>Floating bar and mini monitor only. Press Ctrl+Shift+F10 to disable.</small></span>
-            <input type="checkbox"
-              checked={draft.display.clickThrough && (draft.display.mode === 'bar' || draft.display.mode === 'mini')}
-              disabled={draft.display.mode === 'full' || draft.display.mode === 'desktop'}
-              onChange={e => updateDisplay({ clickThrough: e.target.checked }, false)} />
-          </label>
-          <label className="setting-row">
-            <span><strong>Text-only mode</strong><small>Fully remove the panel; overrides the transparency level</small></span>
-            <input type="checkbox" checked={draft.display.panelTransparent}
-              onChange={e => updateDisplay({ panelTransparent: e.target.checked })} />
-          </label>
-          <label className="setting-row">
-            <span><strong>Glass blur</strong><small>Use Windows acrylic material when available</small></span>
-            <input type="checkbox" checked={draft.display.glassBlur}
-              onChange={e => updateDisplay({ glassBlur: e.target.checked })} />
-          </label>
-          <label className="setting-row">
-            <span><strong>Subtle frame</strong><small>Show a thin neon widget outline</small></span>
-            <input type="checkbox" checked={draft.display.subtleFrame}
-              onChange={e => updateDisplay({ subtleFrame: e.target.checked })} />
-          </label>
-          <label className="setting-row">
-            <span><strong>Launch in last mode</strong><small>Otherwise open the full dashboard</small></span>
-            <input type="checkbox" checked={draft.display.launchLastMode}
-              onChange={e => updateDisplay({ launchLastMode: e.target.checked })} />
-          </label>
-        </div>
-
-        <div className="thresholds">
-          <h3>Thermal warning thresholds</h3>
-          <p>Separate limits are applied to each hardware class.</p>
-          {Object.entries(draft.thresholds).map(([key, threshold]) => (
-            <div className="threshold-row" key={key}>
-              <strong>{thresholdLabels[key] ?? key}</strong>
-              <label>Warm <input type="number" min="20" max="115" value={threshold.warm}
-                onChange={e => updateThreshold(key, 'warm', Number(e.target.value))} />°C</label>
-              <label>Hot <input type="number" min="21" max="120" value={threshold.hot}
-                onChange={e => updateThreshold(key, 'hot', Number(e.target.value))} />°C</label>
-            </div>
-          ))}
+        <div className="settings-shell">
+          <nav className="settings-nav" aria-label="Settings categories">
+            {categories.map(item => (
+              <button key={item.id} type="button" className={category === item.id ? 'is-active' : ''}
+                onClick={() => setCategory(item.id)}>{item.label}</button>
+            ))}
+          </nav>
+          <div className="settings-body">
+            {category === 'general' && <>
+              <Row label="Start with Windows" hint="Open after you sign in to Windows">
+                <input type="checkbox" checked={draft.launchAtStartup}
+                  onChange={e => patch({ launchAtStartup: e.target.checked })} />
+              </Row>
+              <Row label="System tray icon" hint="Needed to restore the dashboard from the tray">
+                <input type="checkbox" checked={draft.showTrayIcon}
+                  onChange={e => patch({ showTrayIcon: e.target.checked, minimizeToTray: e.target.checked ? draft.minimizeToTray : false })} />
+              </Row>
+              <Row label="Minimize to tray" hint="Close hides the window instead of exiting">
+                <input type="checkbox" checked={draft.minimizeToTray} disabled={!draft.showTrayIcon}
+                  onChange={e => patch({ minimizeToTray: e.target.checked })} />
+              </Row>
+              <Row label="Monitoring refresh" hint="How often hardware readings update">
+                <select aria-label="Monitoring refresh" value={draft.refreshIntervalMs}
+                  onChange={e => patch({ refreshIntervalMs: Number(e.target.value) })}>
+                  <option value={500}>0.5 seconds</option>
+                  <option value={1000}>1 second</option>
+                  <option value={2000}>2 seconds</option>
+                  <option value={5000}>5 seconds</option>
+                </select>
+              </Row>
+            </>}
+            {category === 'display' && <>
+              <Row label="Default display mode" hint="Used when Remember last view is off">
+                <select aria-label="Default display mode" value={draft.display.defaultMode}
+                  onChange={e => patchDisplay({ defaultMode: e.target.value as DisplayState['mode'] })}>
+                  <option value="full">Windowed</option>
+                  <option value="bar">Bar</option>
+                  <option value="mini">Mini</option>
+                  <option value="desktop">Desktop Background</option>
+                </select>
+              </Row>
+              <Row label="Remember last view" hint="Reopen the last Full, Windowed, Bar, Mini, or Desktop mode">
+                <input type="checkbox" checked={draft.display.launchLastMode}
+                  onChange={e => patchDisplay({ launchLastMode: e.target.checked })} />
+              </Row>
+              <Row label="Remember window size and position" hint="Restore the last window place on this PC">
+                <input type="checkbox" checked={draft.display.rememberPosition}
+                  onChange={e => patchDisplay({ rememberPosition: e.target.checked })} />
+              </Row>
+              <Row label="Select monitor" hint="Preferred screen for widgets and desktop mode">
+                <select aria-label="Select monitor" value={draft.display.preferredDisplayId ?? ''}
+                  onChange={e => patchDisplay({ preferredDisplayId: e.target.value ? Number(e.target.value) : null })}>
+                  <option value="">Primary screen</option>
+                  {displays.map(display => (
+                    <option key={display.id} value={display.id}>
+                      {display.label || `Display ${display.id}`}{display.primary ? ' (primary)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </Row>
+              <Row label="Bar and Mini size" hint="Compact, normal, or keep a custom size">
+                <select aria-label="Bar and Mini size" value={draft.display.sizePreset}
+                  onChange={e => patchDisplay({ sizePreset: e.target.value as DisplayState['sizePreset'] })}>
+                  <option value="compact">Compact</option>
+                  <option value="normal">Normal</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </Row>
+              <p className="settings-note">Desktop Background shows the full dashboard behind other windows. It does not change the Windows wallpaper. Restore from the tray.</p>
+              <button type="button" className="button" onClick={onResetLayout}>Reset window position</button>
+            </>}
+            {category === 'overlay' && <>
+              <Row label="Always on Top" hint="Keep Bar and Mini above ordinary Windows apps">
+                <input type="checkbox" checked={draft.display.alwaysOnTop}
+                  onChange={e => patchDisplay({ alwaysOnTop: e.target.checked })} />
+              </Row>
+              <Slider label="Overlay Opacity" hint="Bar and Mini background only. 100% is solid, 10% is almost invisible." aria="Overlay Opacity"
+                min={10} max={100} value={Math.round(draft.display.opacity * 100)} suffix="%"
+                onChange={value => patchDisplay({ opacity: value / 100, panelTransparent: false })} />
+              <button type="button" className="button" onClick={() => patchDisplay({ opacity: .9, panelTransparent: false })}>
+                Reset to 90%
+              </button>
+              <Row label="Click-Through" hint="Mouse clicks pass through Bar and Mini onto the app underneath. Always on Top stays on. Turn it off from the tray or the shortcut below.">
+                <input type="checkbox" aria-label="Click-Through"
+                  checked={draft.display.clickThrough}
+                  onChange={e => patchDisplay({ clickThrough: e.target.checked })} />
+              </Row>
+              <Row label="Click-Through shortcut" hint="Global shortcut to toggle Click-Through while Bar or Mini is showing">
+                <select aria-label="Click-Through shortcut"
+                  value={draft.display.clickThroughShortcut}
+                  onChange={e => patchDisplay({ clickThroughShortcut: e.target.value })}>
+                  <option value="CommandOrControl+Shift+F10">Ctrl+Shift+F10</option>
+                  <option value="CommandOrControl+Shift+O">Ctrl+Shift+O</option>
+                  <option value="CommandOrControl+Alt+C">Ctrl+Alt+C</option>
+                </select>
+              </Row>
+              {draft.display.clickThroughError ? (
+                <p className="settings-note" role="alert">{draft.display.clickThroughError}</p>
+              ) : (
+                <p className="settings-note">
+                  Recovery: system tray “Disable Click-Through”, or {draft.display.clickThroughShortcutLabel
+                    ?? 'Ctrl + Shift + F10'}. Native click-through applies on Bar and Mini after settings close.
+                  Exclusive fullscreen games can cover this overlay; borderless windowed usually works. This app does
+                  not inject input into games.
+                </p>
+              )}
+              <Row label="Lock Position" hint="Prevent dragging and resizing Bar and Mini">
+                <input type="checkbox" checked={draft.display.locked}
+                  onChange={e => patchDisplay({ locked: e.target.checked })} />
+              </Row>
+              <p className="settings-note">
+                Overlay Opacity does not change Full Dashboard or Desktop Background. Exclusive fullscreen games can
+                cover this overlay; borderless windowed and borderless fullscreen usually work.
+              </p>
+              <button type="button" className="button" onClick={() => void window.computerMonitor?.resetOverlayPosition()}>
+                Reset Overlay Position
+              </button>
+            </>}
+            {category === 'appearance' && <>
+              <Slider label="RGB intensity" hint="Ambient lighting strength" aria="RGB intensity"
+                min={0} max={100} value={draft.rgbIntensity} suffix="%"
+                onChange={value => patch({ rgbIntensity: value })} />
+              <Row label="Reduced motion" hint="Turn off gauge and ambient animation">
+                <input type="checkbox" checked={draft.reducedMotion}
+                  onChange={e => patch({ reducedMotion: e.target.checked })} />
+              </Row>
+            </>}
+            {category === 'thermal' && <>
+              {Object.entries(draft.thresholds).map(([key, threshold]) => (
+                <div className="threshold-row" key={key}>
+                  <strong>{thresholdLabels[key] ?? key}</strong>
+                  <label>Warm <input type="number" min="20" max="115" value={threshold.warm}
+                    onChange={e => patchThreshold(key, 'warm', Number(e.target.value))} />°C</label>
+                  <label>Hot <input type="number" min="21" max="120" value={threshold.hot}
+                    onChange={e => patchThreshold(key, 'hot', Number(e.target.value))} />°C</label>
+                </div>
+              ))}
+              <button type="button" className="button" onClick={() => patch({ thresholds: structuredClone(defaultThresholds) })}>
+                Reset recommended thresholds
+              </button>
+            </>}
+            {category === 'about' && (
+              <div className="about-block">
+                <p><strong>Computer Monitor Dashboard</strong></p>
+                <p>Version {APP_VERSION}</p>
+                <p>GitHub repository: not configured on this copy</p>
+                <p>Hardware sensors: {sensorStatus}</p>
+                <p>This app does not send telemetry.</p>
+              </div>
+            )}
+          </div>
         </div>
         <footer>
-          <button className="button button--ghost" onClick={onClose}>Cancel</button>
-          <button className="button button--primary" onClick={() => { onSave(draft); onClose() }}>Save settings</button>
+          <button className="button button--ghost" onClick={() => { skip.current = true; setDraft(defaultAppSettings()); void onChange(defaultAppSettings()) }}>
+            Reset to defaults
+          </button>
+          <button className="button button--primary" onClick={onClose}>Done</button>
         </footer>
       </section>
     </div>
+  )
+}
+
+function Row({ label, hint, children }: { label: string; hint: string; children: React.ReactNode }) {
+  return (
+    <label className="setting-row">
+      <span><strong>{label}</strong><small>{hint}</small></span>
+      {children}
+    </label>
+  )
+}
+
+function Slider({ label, hint, aria, min, max, step = 1, value, suffix, onChange }: {
+  label: string; hint: string; aria: string; min: number; max: number; step?: number; value: number; suffix: string
+  onChange(value: number): void
+}) {
+  return (
+    <label className="setting-row setting-row--slider">
+      <span><strong>{label}</strong><small>{hint}</small></span>
+      <input type="range" min={min} max={max} step={step} aria-label={aria} value={value}
+        onChange={e => onChange(Number(e.target.value))} />
+      <output>{value}{suffix}</output>
+    </label>
   )
 }

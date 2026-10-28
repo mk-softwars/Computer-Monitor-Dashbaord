@@ -18,7 +18,7 @@ licenses.
   License: [`licenses/Apache-2.0.txt`](licenses/Apache-2.0.txt)
 - **Microsoft .NET runtime and System libraries** — MIT License and included
   third-party notices. Source: https://github.com/dotnet/runtime
-- **Electron 33** — MIT License. Source: https://github.com/electron/electron
+- **Electron 45** — MIT License. Source: https://github.com/electron/electron
 - **Chromium and bundled Electron components** — various open-source licenses.
   Electron Builder places `LICENSE.electron.txt` and `LICENSES.chromium.html`
   beside the installed executable.

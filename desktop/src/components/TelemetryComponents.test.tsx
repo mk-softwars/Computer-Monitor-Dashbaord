@@ -1,39 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import type { AppSettings } from '../types'
+import type { TelemetrySnapshot } from '../types'
+import { OverlayBar } from './OverlayBar'
 import { NeonGauge } from './NeonGauge'
-import { SettingsPanel } from './SettingsPanel'
+import { defaultAppSettings, SettingsPanel } from './SettingsPanel'
 import { ThermalStatus } from './ThermalStatus'
 
-const settings: AppSettings = {
-  refreshIntervalMs: 1000,
-  rgbIntensity: 75,
-  reducedMotion: false,
-  fullscreen: false,
-  showTrayIcon: true,
-  minimizeToTray: false,
-  launchAtStartup: false,
-  display: {
-    mode: 'full',
-    alwaysOnTop: false,
-    locked: false,
-    clickThrough: false,
-    opacity: 1,
-    panelTransparent: false,
-    glassBlur: false,
-    subtleFrame: true,
-    textScale: 100,
-    sizePreset: 'normal',
-    launchLastMode: true,
-  },
-  thresholds: {
-    cpu: { warm: 75, hot: 90 },
-    gpu: { warm: 75, hot: 88 },
-    gpuHotspot: { warm: 90, hot: 105 },
-    ssd: { warm: 55, hot: 70 },
-    hdd: { warm: 45, hot: 55 },
-    ram: { warm: 60, hot: 75 },
-  },
-}
+const settings = defaultAppSettings()
 
 describe('telemetry components', () => {
   it('clearly renders unavailable readings', () => {
@@ -52,20 +24,101 @@ describe('telemetry components', () => {
     expect(screen.getByText('HOT')).toBeInTheDocument()
   })
 
-  it('previews display mode and opacity controls immediately', () => {
-    const onPreview = vi.fn()
-    render(<SettingsPanel value={settings} onSave={vi.fn()} onPreview={onPreview} onClose={vi.fn()} />)
-    const mode = screen.getByLabelText(/Mode/)
-    expect(screen.getByRole('option', { name: 'Floating Bar Monitor' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Floating Mini Monitor' })).toBeInTheDocument()
-    fireEvent.change(mode, { target: { value: 'mini' } })
-    expect(mode).toHaveValue('mini')
-    expect(onPreview).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByLabelText(/Click through/))
-    expect(onPreview).not.toHaveBeenCalled()
-    fireEvent.change(screen.getByLabelText(/^Panel transparency/), { target: { value: '50' } })
-    expect(onPreview).toHaveBeenLastCalledWith(expect.objectContaining({
-      display: expect.objectContaining({ mode: 'mini', opacity: .5, panelTransparent: false }),
+  it('autosaves overlay opacity from grouped settings', async () => {
+    const onChange = vi.fn()
+    render(<SettingsPanel value={settings} sensorStatus="Live" displays={[]}
+      onChange={onChange} onClose={vi.fn()} onResetLayout={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Gaming Overlay' }))
+    fireEvent.change(screen.getByLabelText('Overlay Opacity'), { target: { value: '50' } })
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalled())
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      display: expect.objectContaining({ opacity: .5, panelTransparent: false }),
     }))
   })
+
+  it('closes settings with Escape', () => {
+    const onClose = vi.fn()
+    render(<SettingsPanel value={settings} sensorStatus="Live" displays={[]}
+      onChange={vi.fn()} onClose={onClose} onResetLayout={vi.fn()} />)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('renders a compact overlay bar without gauges', () => {
+    const overlaySettings = {
+      ...settings,
+      display: { ...settings.display, mode: 'mini' as const, opacity: .9 },
+    }
+    render(<OverlayBar snapshot={snapshot} state="live" settings={overlaySettings} style={{}}
+      settingsOpen={false} onOpenSettings={vi.fn()} onCloseSettings={vi.fn()} />)
+    expect(screen.getByText('CPU')).toBeInTheDocument()
+    expect(screen.getByText('GPU')).toBeInTheDocument()
+    expect(screen.getByText('RAM')).toBeInTheDocument()
+    expect(screen.getByText('VRAM')).toBeInTheDocument()
+    expect(screen.getByText('SSD')).toBeInTheDocument()
+    expect(screen.getByText('63%')).toBeInTheDocument()
+    expect(screen.getAllByText('N/A').length).toBeGreaterThan(0)
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('exposes overlay opacity and reset position controls', () => {
+    const overlaySettings = {
+      ...settings,
+      display: { ...settings.display, mode: 'mini' as const, opacity: .9 },
+    }
+    render(<OverlayBar snapshot={snapshot} state="live" settings={overlaySettings} style={{}}
+      settingsOpen onOpenSettings={vi.fn()} onCloseSettings={vi.fn()} />)
+    expect(screen.getByLabelText('Overlay Opacity')).toHaveValue('90')
+    expect(screen.getByLabelText('Click-Through')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reset Overlay Position' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reset to 90%' })).toBeInTheDocument()
+  })
+
+  it('lets Click-Through be enabled from full dashboard settings', async () => {
+    const onChange = vi.fn()
+    render(<SettingsPanel value={settings} sensorStatus="Live" displays={[]}
+      onChange={onChange} onClose={vi.fn()} onResetLayout={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Gaming Overlay' }))
+    const toggle = screen.getByLabelText('Click-Through')
+    expect(toggle).toBeEnabled()
+    expect(toggle).not.toBeChecked()
+    fireEvent.click(toggle)
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalled())
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      display: expect.objectContaining({ clickThrough: true }),
+    }))
+    expect(screen.getByLabelText('Click-Through shortcut')).toHaveDisplayValue('Ctrl+Shift+F10')
+  })
 })
+
+const snapshot: TelemetrySnapshot = {
+  timestamp: '2026-10-28T17:00:00.000Z',
+  cpu: {
+    name: 'Intel Core i7-9700K',
+    usagePercent: 63,
+    temperatureCelsius: null,
+    thermalState: 'unavailable',
+    coreUsagePercent: [10, 20],
+  },
+  gpus: [{
+    id: 'gpu-0',
+    name: 'NVIDIA GeForce RTX 2070',
+    usagePercent: 29,
+    temperatureCelsius: 34,
+    hotspotTemperatureCelsius: 52,
+    vramUsagePercent: 4,
+    thermalState: 'normal',
+    hotspotThermalState: 'normal',
+  }],
+  memory: { usagePercent: 59, temperatureCelsius: null, thermalState: 'unavailable' },
+  storage: [{
+    id: 'ssd-0',
+    name: 'Local Disk',
+    driveLetters: 'C:',
+    kind: 'SSD',
+    usedPercent: 75,
+    temperatureCelsius: null,
+    thermalState: 'unavailable',
+  }],
+  health: { status: 'ok', elevated: false, notes: [] },
+}

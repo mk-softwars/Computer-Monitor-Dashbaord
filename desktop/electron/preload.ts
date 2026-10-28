@@ -11,14 +11,26 @@ contextBridge.exposeInMainWorld('computerMonitor', {
   minimize: () => ipcRenderer.invoke('window:minimize'),
   toggleMaximize: () => ipcRenderer.invoke('window:toggleMaximize'),
   close: () => ipcRenderer.invoke('window:close'),
+  prepareSettings: () => ipcRenderer.invoke('window:prepareSettings'),
+  restoreAfterSettings: () => ipcRenderer.invoke('window:restoreAfterSettings'),
   getDisplayState: () => ipcRenderer.invoke('display:getState'),
   setDisplayState: (patch: unknown) => ipcRenderer.invoke('display:setState', patch),
   setPointerPassthrough: (passthrough: boolean) => ipcRenderer.send('display:setPointerPassthrough', passthrough),
   setSizePreset: (preset: 'compact' | 'normal') => ipcRenderer.invoke('display:setSizePreset', preset),
+  resetOverlayPosition: () => ipcRenderer.invoke('display:resetOverlayPosition'),
+  resetWindowLayout: () => ipcRenderer.invoke('window:resetLayout'),
+  getWindowChrome: () => ipcRenderer.invoke('window:getChrome'),
+  setMaximized: (enabled: boolean) => ipcRenderer.invoke('window:setMaximized', enabled),
+  listDisplays: () => ipcRenderer.invoke('window:listDisplays'),
   onDisplayStateChanged: (callback: (state: unknown) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, state: unknown) => callback(state)
     ipcRenderer.on('display-state-changed', handler)
     return () => ipcRenderer.removeListener('display-state-changed', handler)
+  },
+  onWindowChromeChanged: (callback: (chrome: unknown) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, chrome: unknown) => callback(chrome)
+    ipcRenderer.on('window-chrome-changed', handler)
+    return () => ipcRenderer.removeListener('window-chrome-changed', handler)
   },
   onOpenSettings: (callback: () => void) => {
     const handler = () => callback()
