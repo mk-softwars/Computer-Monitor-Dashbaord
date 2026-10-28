@@ -147,6 +147,9 @@ declare global {
       onDisplayStateChanged(callback: (state: DisplayState) => void): () => void
       onWindowChromeChanged(callback: (chrome: { maximized: boolean; fullscreen: boolean }) => void): () => void
       onOpenSettings(callback: () => void): () => void
+      startSpeedTest(): Promise<{ phase: string; mbps?: number; error?: string }>
+      cancelSpeedTest(): Promise<boolean>
+      onSpeedTestProgress(callback: (progress: { phase: string; mbps?: number; error?: string }) => void): () => void
       onMonitorChanged(callback: () => void): () => void
     }
   }

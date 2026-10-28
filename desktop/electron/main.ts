@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { runInternetDownloadTest, SpeedTestCancelledError } from './internetSpeedTest'
 
 let mainWindow: BrowserWindow | null = null
 let monitor: ChildProcessWithoutNullStreams | null = null
@@ -18,6 +19,7 @@ let windowReady = false
 let fullscreenActive = false
 let preFullscreenBounds: Rectangle | null = null
 let settingsSession: { bounds: Rectangle; mode: DisplayMode } | null = null
+let lastHitTargetAlign = 0
 let persistQuietUntil = 0
 let clickThroughShortcutRegistered = false
 let registeredClickThroughAccel: string | null = null
@@ -108,6 +110,13 @@ function loadDisplayState() {
     displayState.clickThroughShortcut = CLICK_THROUGH_SHORTCUTS.has(displayState.clickThroughShortcut)
       ? displayState.clickThroughShortcut
       : DEFAULT_CLICK_THROUGH_SHORTCUT
+    if (displayState.mode === 'desktop') {
+      displayState.clickThrough = false
+      displayState.alwaysOnTop = false
+    }
+    if (displayState.mode === 'full' || displayState.mode === 'desktop') {
+      displayState.clickThrough = false
+    }
   } catch {
     displayState = structuredClone(defaultDisplayState)
   }
@@ -325,7 +334,6 @@ function registerClickThroughShortcut(): boolean {
 
 function nativeClickThroughShouldIgnore() {
   if (settingsSession) return false
-  if (displayState.mode === 'desktop') return true
   return overlayMode(displayState.mode) && displayState.clickThrough
 }
 
@@ -337,7 +345,7 @@ function applyClickThrough(): boolean {
   const shouldIgnore = nativeClickThroughShouldIgnore()
   try {
     if (shouldIgnore) {
-      mainWindow.setIgnoreMouseEvents(true)
+      mainWindow.setIgnoreMouseEvents(true, { forward: true })
       mainWindow.setFocusable(false)
     } else {
       mainWindow.setIgnoreMouseEvents(false)
@@ -398,6 +406,22 @@ function applyWindowLayering() {
     return
   }
   mainWindow.setAlwaysOnTop(false)
+}
+
+function realignRendererHitTarget(bounds?: Rectangle) {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  if (Date.now() - lastHitTargetAlign < 200) return
+  const target = bounds ?? mainWindow.getBounds()
+  if (settingsSession && (target.height < 480 || target.width < 720)) return
+  lastHitTargetAlign = Date.now()
+  const wasApplying = applyingBounds
+  applyingBounds = true
+  try {
+    mainWindow.setBounds({ x: target.x, y: target.y, width: target.width + 1, height: target.height })
+    mainWindow.setBounds(target)
+  } finally {
+    applyingBounds = wasApplying
+  }
 }
 
 function reassertOverlayChrome() {
@@ -521,6 +545,14 @@ async function applyDisplayState(patch: Partial<Omit<DisplayState, 'bounds'>>) {
       : displayState.clickThroughShortcut
     registerClickThroughShortcut()
   }
+  if (displayState.mode === 'desktop') {
+    displayState.clickThrough = false
+    displayState.alwaysOnTop = false
+  } else if (compactMode(displayState.mode) && previousMode === 'full' && patch.alwaysOnTop === undefined) {
+    displayState.alwaysOnTop = true
+  } else if ((compactMode(previousMode) || previousMode === 'desktop') && displayState.mode === 'full' && patch.alwaysOnTop === undefined) {
+    displayState.alwaysOnTop = false
+  }
   if (patch.clickThrough === true && !canRecoverClickThrough()) {
     displayState.clickThrough = false
     clickThroughError = 'Click-Through needs the system tray or a working keyboard shortcut so you can turn it off.'
@@ -550,9 +582,6 @@ async function applyDisplayState(patch: Partial<Omit<DisplayState, 'bounds'>>) {
     (patch.preferredDisplayId !== undefined && patch.preferredDisplayId !== previousPreferred)
     || (patch.overlayAnchor !== undefined && patch.overlayAnchor !== previousAnchor)
   )
-  if (compactMode(displayState.mode) && previousMode === 'full' && patch.alwaysOnTop === undefined) {
-    displayState.alwaysOnTop = true
-  }
   await fitNativeWindow({
     forceSize: modeChanged || overlayRelocate,
     bounds: overlayRelocate
@@ -585,11 +614,13 @@ async function applyDisplayState(patch: Partial<Omit<DisplayState, 'bounds'>>) {
 }
 
 async function fitNativeWindow(options: { forceSize?: boolean; bounds?: WindowBounds } = {}) {
-  if (!mainWindow) return
+  if (!mainWindow || settingsSession) return
   const compact = compactMode(displayState.mode)
   persistQuietUntil = Date.now() + 1200
   applyingBounds = true
+  let resized = false
   try {
+    if (settingsSession) return
     if (compact) {
       if (mainWindow.isMaximized()) mainWindow.unmaximize()
       if (mainWindow.isFullScreen() || fullscreenActive) {
@@ -598,20 +629,23 @@ async function fitNativeWindow(options: { forceSize?: boolean; bounds?: WindowBo
         mainWindow.setFullScreen(false)
         await delay(250)
       }
+      if (settingsSession) return
       const min = minimumSize(displayState.mode)
       const max = maximumSize(displayState.mode)
       mainWindow.setMaximizable(false)
-      mainWindow.setMinimumSize(min.width, min.height)
       mainWindow.setMaximumSize(max.width, max.height)
+      mainWindow.setMinimumSize(min.width, min.height)
       const current = mainWindow.getBounds()
       const next = sanitizeBounds(
         displayState.mode,
         options.bounds ?? displayState.bounds[displayState.mode] ?? overlayDefaultBounds(displayState.mode),
       )
       const oversized = current.width > max.width + 8 || current.height > max.height + 8
+      if (settingsSession) return
       if (options.forceSize || options.bounds || oversized) {
         mainWindow.setBounds(next)
         displayState.bounds[displayState.mode] = next
+        resized = true
       }
       return
     }
@@ -621,15 +655,17 @@ async function fitNativeWindow(options: { forceSize?: boolean; bounds?: WindowBo
       mainWindow.unmaximize()
     }
     mainWindow.setMaximizable(true)
-    mainWindow.setMinimumSize(min.width, min.height)
     mainWindow.setMaximumSize(max.width, max.height)
+    mainWindow.setMinimumSize(min.width, min.height)
     if (options.forceSize) {
       const stored = displayState.bounds.full ?? presetBounds('full')
       mainWindow.setBounds(sanitizeBounds('full', stored))
+      resized = true
     }
   } finally {
     applyingBounds = false
   }
+  if (resized && !settingsSession) realignRendererHitTarget()
 }
 
 function captureDashboardIfRequested() {
@@ -719,6 +755,7 @@ function createWindow() {
       await fitNativeWindow({ forceSize: true, bounds })
       windowReady = true
       mainWindow?.show()
+      setTimeout(() => realignRendererHitTarget(), 50)
       if (compactMode(displayState.mode)) {
         setTimeout(() => {
           if (!mainWindow || !compactMode(displayState.mode)) return
@@ -741,6 +778,7 @@ function createWindow() {
     mainWindow?.hide()
   })
   mainWindow.on('move', () => persistCurrentBounds())
+  mainWindow.on('moved', () => realignRendererHitTarget())
   mainWindow.on('resize', () => persistCurrentBounds())
   mainWindow.on('maximize', emitWindowChrome)
   mainWindow.on('unmaximize', emitWindowChrome)
@@ -830,6 +868,35 @@ async function setWindowFullscreen(enabled: boolean) {
   return false
 }
 
+let speedTestAbort: AbortController | null = null
+
+ipcMain.handle('speedtest:start', async event => {
+  if (speedTestAbort) return { phase: 'testing' as const }
+  speedTestAbort = new AbortController()
+  const sender = event.sender
+  const emit = (payload: { phase: string; mbps?: number; error?: string }) => {
+    if (!sender.isDestroyed()) sender.send('speedtest:progress', payload)
+  }
+  emit({ phase: 'testing' })
+  try {
+    const result = await runInternetDownloadTest({ signal: speedTestAbort.signal })
+    emit({ phase: 'complete', mbps: result.mbps })
+    return { phase: 'complete' as const, mbps: result.mbps }
+  } catch (error) {
+    if (error instanceof SpeedTestCancelledError) {
+      emit({ phase: 'cancelled' })
+      return { phase: 'cancelled' as const }
+    }
+    emit({ phase: 'failed', error: error instanceof Error ? error.message : 'failed' })
+    return { phase: 'failed' as const }
+  } finally {
+    speedTestAbort = null
+  }
+})
+ipcMain.handle('speedtest:cancel', () => {
+  speedTestAbort?.abort()
+  return true
+})
 ipcMain.handle('monitor:connection', () => endpoint ? { endpoint, token: sessionToken } : null)
 ipcMain.handle('window:toggleFullscreen', async () => {
   if (!mainWindow) return false
@@ -890,23 +957,36 @@ ipcMain.handle('window:close', () => mainWindow?.close())
 ipcMain.handle('window:prepareSettings', () => {
   if (!mainWindow) return false
   suspendClickThrough()
-  if (!overlayMode(displayState.mode) || fullscreenActive) return false
+  if (!overlayMode(displayState.mode)) return false
+  if (fullscreenActive || mainWindow.isFullScreen()) {
+    fullscreenActive = false
+    preFullscreenBounds = null
+    mainWindow.setFullScreen(false)
+  }
+  if (mainWindow.isMaximized()) mainWindow.unmaximize()
   settingsSession = { bounds: mainWindow.getBounds(), mode: displayState.mode }
   const next = clampToWorkArea({
     x: settingsSession.bounds.x,
     y: settingsSession.bounds.y,
-    width: Math.max(settingsSession.bounds.width, 750),
-    height: 348,
+    width: Math.max(settingsSession.bounds.width, 780),
+    height: Math.max(settingsSession.bounds.height, 640),
   })
   applyingBounds = true
-  mainWindow.setMinimumSize(640, 76)
-  mainWindow.setMaximumSize(980, 420)
-  mainWindow.setResizable(true)
-  mainWindow.setMovable(true)
-  applyWindowLayering()
-  mainWindow.setSkipTaskbar(false)
-  mainWindow.setBounds(next)
-  applyingBounds = false
+  try {
+    mainWindow.setMaximumSize(1100, 860)
+    mainWindow.setMinimumSize(720, 480)
+    mainWindow.setResizable(true)
+    mainWindow.setMovable(true)
+    applyWindowLayering()
+    mainWindow.setSkipTaskbar(false)
+    mainWindow.setBounds(next)
+  } finally {
+    applyingBounds = false
+  }
+  setTimeout(() => {
+    if (!mainWindow || mainWindow.isDestroyed() || !settingsSession) return
+    realignRendererHitTarget(mainWindow.getBounds())
+  }, 50)
   mainWindow.show()
   mainWindow.focus()
   return true
@@ -986,6 +1066,7 @@ app.whenReady().then(() => {
   createWindow()
   screen.on('display-metrics-changed', () => {
     if (overlayMode(displayState.mode) || displayState.mode === 'desktop') reassertOverlayChrome()
+    realignRendererHitTarget()
   })
 })
 

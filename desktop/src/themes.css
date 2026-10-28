@@ -5,6 +5,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin: 4px 0 18px;
+  -webkit-app-region: no-drag;
 }
 .theme-card {
   display: grid;
@@ -16,7 +17,7 @@
   cursor: pointer;
   border: 1px solid rgb(111 149 201 / .28);
   border-radius: 12px;
-  background: rgb(8 8 28 / .55);
+  background: #08081c;
 }
 .theme-card:hover, .theme-card:focus-visible {
   border-color: var(--cyan);
@@ -107,11 +108,29 @@ html[data-theme="nineties"] {
   --win-shadow: #808080;
   --win-dark: #000;
   --win-navy: #000080;
+  background: #c0c0c0;
+}
+html[data-theme="nineties"],
+html[data-theme="nineties"] body,
+html[data-theme="nineties"] #root {
+  background: #c0c0c0 !important;
+}
+html.overlay-shell[data-theme="nineties"],
+html.overlay-shell[data-theme="nineties"] body,
+html.overlay-shell[data-theme="nineties"] #root {
+  background: transparent !important;
+}
+html[data-theme="nineties"] *,
+html[data-theme="nineties"] *::before,
+html[data-theme="nineties"] *::after {
+  animation: none !important;
+  transition: none !important;
 }
 html[data-theme="nineties"] .app {
   color: #000;
   background: var(--win-face);
   padding: 3px;
+  container-type: normal;
   box-shadow: inset -2px -2px var(--win-dark), inset 2px 2px var(--win-light), inset -1px -1px var(--win-shadow), inset 1px 1px #dfdfdf;
 }
 html[data-theme="nineties"] .app::before,
@@ -255,7 +274,7 @@ html[data-theme="nineties"] .core-panel {
   background: var(--win-face);
   backdrop-filter: none;
   box-shadow: inset 1px 1px var(--win-dark), inset -1px -1px var(--win-light);
-  overflow: visible;
+  overflow: hidden;
 }
 html[data-theme="nineties"] .hardware-card::before,
 html[data-theme="nineties"] .compact-card::before,
@@ -361,10 +380,22 @@ html[data-theme="nineties"] .network-speeds__row span {
 }
 html[data-theme="nineties"] .metric-line strong,
 html[data-theme="nineties"] .availability strong,
-html[data-theme="nineties"] .network-speeds__row strong {
+html[data-theme="nineties"] .network-speeds__row strong,
+html[data-theme="nineties"] .network-speed-test__status.is-result {
   color: #000;
   text-shadow: none;
   font: 12px Tahoma, sans-serif;
+}
+html[data-theme="nineties"] .network-speed-test__status,
+html[data-theme="nineties"] .network-speed-test small {
+  color: #000;
+  font: 11px Tahoma, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+html[data-theme="nineties"] .network-speed-test__button {
+  border-radius: 0;
+  font: bold 11px Tahoma, sans-serif;
 }
 
 html[data-theme="nineties"] .core-panel > header > span,
@@ -476,7 +507,7 @@ html[data-theme="nineties"] .overlay-settings__actions .is-primary {
 }
 
 html[data-theme="nineties"] .settings-backdrop {
-  background: rgb(0 0 0 / .35);
+  background: rgb(0 0 0 / .62);
   backdrop-filter: none;
 }
 html[data-theme="nineties"] .settings-panel {
@@ -492,6 +523,7 @@ html[data-theme="nineties"] .threshold-row > strong { color: #000; font-family: 
 html[data-theme="nineties"] .settings-nav button {
   border-radius: 0;
   color: #000;
+  background: var(--win-face);
   font: 12px Tahoma, sans-serif;
   letter-spacing: 0;
 }
@@ -575,6 +607,17 @@ html[data-theme="coding"] {
   --term-panel: #07140c;
   --term-dim: #147a3c;
   --term-fg: #00ff66;
+  background: #050805;
+}
+html[data-theme="coding"],
+html[data-theme="coding"] body,
+html[data-theme="coding"] #root {
+  background: #050805 !important;
+}
+html.overlay-shell[data-theme="coding"],
+html.overlay-shell[data-theme="coding"] body,
+html.overlay-shell[data-theme="coding"] #root {
+  background: transparent !important;
 }
 html[data-theme="coding"] .app {
   color: var(--term-fg);
@@ -624,6 +667,11 @@ html[data-theme="coding"] .window-controls {
   background: var(--term-panel);
   border: 1px solid var(--term-dim);
   box-shadow: none;
+}
+html[data-theme="coding"] .mode-switch button,
+html[data-theme="coding"] .window-controls button {
+  background: var(--term-panel);
+  -webkit-app-region: no-drag;
 }
 html[data-theme="coding"] .icon-button:hover,
 html[data-theme="coding"] .icon-button:focus-visible,
@@ -734,10 +782,18 @@ html[data-theme="coding"] .network-speeds__row span {
 }
 html[data-theme="coding"] .metric-line strong,
 html[data-theme="coding"] .availability strong,
-html[data-theme="coding"] .network-speeds__row strong {
+html[data-theme="coding"] .network-speeds__row strong,
+html[data-theme="coding"] .network-speed-test__status.is-result {
   color: var(--term-fg);
   text-shadow: none;
   font-family: Consolas, monospace;
+}
+html[data-theme="coding"] .network-speed-test__status,
+html[data-theme="coding"] .network-speed-test small {
+  color: var(--term-dim);
+  font-family: Consolas, monospace;
+  letter-spacing: 0;
+  text-transform: none;
 }
 html[data-theme="coding"] .core { color: var(--term-dim); font-family: Consolas, monospace; }
 html[data-theme="coding"] .core > div { border-radius: 0; background: #0d3d22; }
@@ -786,6 +842,8 @@ html[data-theme="coding"] .overlay-metric--violet { --metric-color: #00ff66; }
 html[data-theme="coding"] .overlay-actions button {
   border-radius: 2px;
   color: var(--term-fg);
+  background: var(--term-panel);
+  -webkit-app-region: no-drag;
 }
 html[data-theme="coding"] .overlay-actions button:hover,
 html[data-theme="coding"] .overlay-actions button:focus-visible,
@@ -815,6 +873,8 @@ html[data-theme="coding"] .overlay-settings__actions button {
   border-radius: 2px;
   border: 1px solid var(--term-dim);
   text-transform: none;
+  background: var(--term-panel);
+  -webkit-app-region: no-drag;
 }
 html[data-theme="coding"] .overlay-settings__actions .is-primary {
   background: #0b2414;
@@ -837,6 +897,7 @@ html[data-theme="coding"] .setting-row strong { font-family: Consolas, monospace
 html[data-theme="coding"] .settings-nav button {
   border-radius: 2px;
   color: var(--term-dim);
+  background: var(--term-bg);
   font-family: Consolas, monospace;
 }
 html[data-theme="coding"] .settings-nav button.is-active,
@@ -871,8 +932,9 @@ html[data-theme="coding"] .button {
   letter-spacing: 0;
   text-transform: none;
   border: 1px solid var(--term-dim);
-  background: transparent;
+  background: var(--term-panel);
   box-shadow: none;
+  -webkit-app-region: no-drag;
 }
 html[data-theme="coding"] .button--ghost:hover { color: var(--term-fg); border-color: var(--term-fg); }
 html[data-theme="coding"] .button--primary {

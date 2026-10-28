@@ -4,7 +4,12 @@
 
 Public Windows installer with Settings → Appearance, Original RGB / 90s /
 Coding themes, and live Ethernet/Wi-Fi download and upload on the full
-dashboard. Existing v1.0.0 saved settings keep those features visible. See
+dashboard. Existing v1.0.0 saved settings keep those features visible.
+
+Bar and Mini now open the full Settings panel (including Appearance) in a
+window tall enough to use. Appearance clicks, theme changes, Done, Desktop
+Background, and Coding/90s buttons were fixed for this transparent Windows
+window. Optional Test Internet Speed is available on the Network card. See
 [release notes](docs/RELEASE_NOTES.md).
 
 ## 1.1.0

@@ -2,7 +2,7 @@ import { GripVertical, Lock, Minus, Monitor, Pin, Settings, Unlock, X } from 'lu
 import { useEffect } from 'react'
 import { formatMbpsShort } from '../networkFormat'
 import { applyTheme } from '../theme'
-import type { AppSettings, DisplayState, TelemetrySnapshot, ThermalState } from '../types'
+import type { AppSettings, TelemetrySnapshot, ThermalState } from '../types'
 import type { ConnectionState } from '../hooks/useTelemetry'
 
 interface OverlayBarProps {
@@ -156,65 +156,7 @@ export function OverlayBar({
           </button>
         </div>
       </div>
-      {settingsOpen ? <OverlaySettings display={display} onClose={onCloseSettings} /> : null}
     </div>
-  )
-}
-
-function OverlaySettings({ display, onClose }: { display: DisplayState; onClose(): void }) {
-  const opacityPercent = Math.round(Math.max(.1, Math.min(1, display.opacity)) * 100)
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  const patch = (next: Partial<DisplayState>) => {
-    void window.computerMonitor?.setDisplayState(next)
-  }
-
-  return (
-    <section className="overlay-settings" data-click-through-control role="dialog" aria-label="Overlay settings">
-      <label className="overlay-settings__row">
-        <span>Always on Top</span>
-        <input type="checkbox" checked={display.alwaysOnTop}
-          onChange={event => patch({ alwaysOnTop: event.target.checked })} />
-      </label>
-      <label className="overlay-settings__row">
-        <span>Overlay Opacity</span>
-        <input type="range" min="10" max="100" step="1" aria-label="Overlay Opacity"
-          value={opacityPercent}
-          onChange={event => patch({ opacity: Number(event.target.value) / 100, panelTransparent: false })} />
-        <output>{opacityPercent}%</output>
-      </label>
-      <label className="overlay-settings__row">
-        <span>Click-Through</span>
-        <input type="checkbox" aria-label="Click-Through" checked={display.clickThrough}
-          onChange={event => {
-            const enabled = event.target.checked
-            void window.computerMonitor?.setDisplayState({ clickThrough: enabled }).then(applied => {
-              if (enabled && applied?.clickThrough) onClose()
-            })
-          }} />
-      </label>
-      <p className="overlay-settings__hint">
-        Disable from the tray or {display.clickThroughShortcutLabel ?? 'Ctrl + Shift + F10'}.
-        {display.clickThroughError ? ` ${display.clickThroughError}` : ''}
-      </p>
-      <label className="overlay-settings__row">
-        <span>Lock Position</span>
-        <input type="checkbox" checked={display.locked}
-          onChange={event => patch({ locked: event.target.checked })} />
-      </label>
-      <div className="overlay-settings__actions">
-        <button type="button" onClick={() => patch({ opacity: .9, panelTransparent: false })}>Reset to 90%</button>
-        <button type="button" onClick={() => void window.computerMonitor?.resetOverlayPosition()}>Reset Overlay Position</button>
-        <button type="button" className="is-primary" onClick={onClose}>Done</button>
-      </div>
-    </section>
   )
 }
 

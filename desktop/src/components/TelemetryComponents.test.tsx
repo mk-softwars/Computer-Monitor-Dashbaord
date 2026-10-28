@@ -48,6 +48,16 @@ describe('telemetry components', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it('closes settings from the Done button after a theme change', () => {
+    const onClose = vi.fn()
+    render(<SettingsPanel value={settings} sensorStatus="Live" displays={[]}
+      onChange={vi.fn()} onClose={onClose} onResetLayout={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Appearance' }))
+    fireEvent.click(screen.getByRole('radio', { name: '90s' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    expect(onClose).toHaveBeenCalled()
+  })
+
   it('renders a compact overlay bar without gauges', () => {
     const overlaySettings = {
       ...settings,
@@ -65,13 +75,20 @@ describe('telemetry components', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
-  it('exposes overlay opacity and reset position controls', () => {
+  it('does not stack a second overlay settings strip under Monitor settings', () => {
     const overlaySettings = {
       ...settings,
-      display: { ...settings.display, mode: 'mini' as const, opacity: .9 },
+      display: { ...settings.display, mode: 'bar' as const, opacity: .9 },
     }
-    render(<OverlayBar snapshot={snapshot} state="live" settings={overlaySettings} style={{}}
-      settingsOpen onOpenSettings={vi.fn()} onCloseSettings={vi.fn()} />)
+    render(<>
+      <OverlayBar snapshot={snapshot} state="live" settings={overlaySettings} style={{}}
+        settingsOpen onOpenSettings={vi.fn()} onCloseSettings={vi.fn()} />
+      <SettingsPanel value={overlaySettings} sensorStatus="Live" displays={[]}
+        onChange={vi.fn()} onClose={vi.fn()} onResetLayout={vi.fn()} />
+    </>)
+    expect(screen.queryByRole('dialog', { name: 'Overlay settings' })).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Monitor settings' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Gaming Overlay' }))
     expect(screen.getByLabelText('Overlay Opacity')).toHaveValue('90')
     expect(screen.getByLabelText('Click-Through')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Reset Overlay Position' })).toBeInTheDocument()
@@ -115,6 +132,63 @@ describe('telemetry components', () => {
     expect(restored.network.showUpload).toBe(true)
     expect(restored.network.showInBar).toBe(false)
     expect(restored.network.showInMini).toBe(false)
+  })
+
+  it('portals Settings onto document.body so Appearance is outside the dashboard drag region', () => {
+    const { container } = render(
+      <main className="app">
+        <SettingsPanel value={settings} sensorStatus="Live" displays={[]}
+          onChange={vi.fn()} onClose={vi.fn()} onResetLayout={vi.fn()} />
+      </main>,
+    )
+    const backdrop = document.body.querySelector('.settings-backdrop')
+    expect(backdrop).toBeInstanceOf(HTMLElement)
+    expect(container.querySelector('.settings-backdrop')).toBeNull()
+    expect(backdrop?.parentElement).toBe(document.body)
+    fireEvent.click(screen.getByRole('button', { name: 'Appearance' }))
+    expect(screen.getByRole('button', { name: 'Appearance' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('radio', { name: 'Original RGB' })).toBeInTheDocument()
+    expect(screen.getByText(/Choose a visual theme/)).toBeInTheDocument()
+  })
+
+  it('opens every settings category from the navigation', () => {
+    render(<SettingsPanel value={settings} sensorStatus="Live" displays={[]}
+      onChange={vi.fn()} onClose={vi.fn()} onResetLayout={vi.fn()} />)
+    const cases: Array<[string, string | RegExp]> = [
+      ['Display', 'Default display mode'],
+      ['Gaming Overlay', 'Always on Top'],
+      ['Network', 'Network Monitoring'],
+      ['Appearance', /Choose a visual theme/],
+      ['Temperature', 'CPU package'],
+      ['About', /github.com\/mk-softwars\/Computer-Monitor-Dashbaord/],
+      ['General', 'Start with Windows'],
+    ]
+    for (const [name, expected] of cases) {
+      fireEvent.click(screen.getByRole('button', { name }))
+      expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByText(expected)).toBeInTheDocument()
+    }
+  })
+
+  it('shows Appearance theme choices when settings open over Bar or Mini', async () => {
+    const overlaySettings = {
+      ...settings,
+      display: { ...settings.display, mode: 'bar' as const },
+    }
+    const onChange = vi.fn()
+    render(<>
+      <OverlayBar snapshot={snapshot} state="live" settings={overlaySettings} style={{}}
+        settingsOpen onOpenSettings={vi.fn()} onCloseSettings={vi.fn()} />
+      <SettingsPanel value={overlaySettings} sensorStatus="Live" displays={[]}
+        onChange={onChange} onClose={vi.fn()} onResetLayout={vi.fn()} />
+    </>)
+    fireEvent.click(screen.getByRole('button', { name: 'Appearance' }))
+    expect(screen.getByRole('radio', { name: 'Original RGB' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '90s' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Coding' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('radio', { name: 'Coding' }))
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ theme: 'coding' })))
+    expect(document.documentElement.dataset.theme).toBe('coding')
   })
 
   it('defaults to Original RGB and applies a selected theme from Appearance', async () => {

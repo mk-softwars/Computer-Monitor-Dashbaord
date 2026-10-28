@@ -23,8 +23,13 @@ While the app is running it reads, where available:
 - Fixed-drive names, letters, occupied capacity, and drive temperature if a
   sensor exists
 - Optional network download and upload **speed** from this PC’s Ethernet or
-  Wi-Fi interface byte counters (not browsing history, URLs, packet contents,
-  or an internet speed test)
+  Wi-Fi interface byte counters (not browsing history, URLs, or packet contents)
+- An optional **internet download speed test** only when you click
+  **Test Internet Speed**. That test downloads from Cloudflare’s public
+  speed-test host `https://speed.cloudflare.com/__down` (up to 9 MiB, 25
+  second timeout). It is not started automatically. Cloudflare’s own speed-test
+  engine documents this URL for connection measurement. This app does not send
+  the result to the developer.
 - Window layout, display mode, and the settings you choose
 
 Missing sensors are shown as **N/A**. The app does not invent replacement
@@ -58,7 +63,8 @@ Windows user profile until you delete them.
 Reviewed application code does **not**:
 
 - Send hardware telemetry or network statistics to the developer
-- Run automatic internet speed tests
+- Run automatic or background internet speed tests (a test starts only if you
+  click **Test Internet Speed**)
 - Collect browsing history, URLs, packet contents, or personal traffic data
 - Implement Google Analytics, advertising SDKs, or similar trackers
 - Implement crash-report upload

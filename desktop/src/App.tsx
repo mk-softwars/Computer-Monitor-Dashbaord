@@ -1,14 +1,35 @@
 import { Cpu, Database, Expand, Gauge, LayoutDashboard, Maximize2, MemoryStick, Minus, Monitor, PictureInPicture2, Settings, Square, Wifi, X, Zap } from 'lucide-react'
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NeonGauge } from './components/NeonGauge'
 import { OverlayBar } from './components/OverlayBar'
 import { normalizeAppSettings, SettingsPanel } from './components/SettingsPanel'
 import { ThermalStatus } from './components/ThermalStatus'
 import { useDashboardLayout } from './hooks/useDashboardLayout'
 import { useTelemetry, type ConnectionState } from './hooks/useTelemetry'
+import { NetworkSpeedTest } from './components/NetworkSpeedTest'
 import { formatMbps } from './networkFormat'
 import { applyTheme } from './theme'
 import type { AppSettings, DisplayState, ThermalState } from './types'
+
+function nativeChromeKey(value: AppSettings) {
+  return JSON.stringify({
+    fullscreen: value.fullscreen,
+    showTrayIcon: value.showTrayIcon,
+    minimizeToTray: value.minimizeToTray,
+    launchAtStartup: value.launchAtStartup,
+    mode: value.display.mode,
+    alwaysOnTop: value.display.alwaysOnTop,
+    locked: value.display.locked,
+    clickThrough: value.display.clickThrough,
+    opacity: value.display.opacity,
+    panelTransparent: value.display.panelTransparent,
+    glassBlur: value.display.glassBlur,
+    sizePreset: value.display.sizePreset,
+    preferredDisplayId: value.display.preferredDisplayId,
+    overlayAnchor: value.display.overlayAnchor,
+    clickThroughShortcut: value.display.clickThroughShortcut,
+  })
+}
 
 function loadSettings(): AppSettings {
   try {
@@ -27,6 +48,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [chrome, setChrome] = useState({ maximized: false, fullscreen: false })
   const [displays, setDisplays] = useState<Array<{ id: number; label: string; primary: boolean }>>([])
+  const lastNative = useRef(nativeChromeKey(settings))
   const gpu = snapshot?.gpus[0]
   const overlay = settings.display.mode === 'bar' || settings.display.mode === 'mini'
   const lastUpdate = useMemo(() => snapshot
@@ -36,6 +58,31 @@ export default function App() {
   useEffect(() => {
     applyTheme(settings.theme)
   }, [settings.theme])
+
+  useEffect(() => {
+    const passClicksThrough = (settings.display.mode === 'bar' || settings.display.mode === 'mini')
+      && settings.display.clickThrough
+    if (!passClicksThrough) {
+      window.computerMonitor?.setPointerPassthrough(false)
+      return
+    }
+    let passthrough = false
+    const onMove = (event: MouseEvent) => {
+      const el = event.target as Element | null
+      const overControl = Boolean(el?.closest([
+        'button', 'a', 'input', 'select', 'textarea', 'label',
+        '[data-click-through-control]',
+        '.mode-switch', '.mode-select', '.window-controls', '.topbar__actions',
+        '.overlay-actions', '.overlay-settings', '.settings-panel', '.network-speed-test',
+      ].join(',')))
+      const next = !overControl
+      if (next === passthrough) return
+      passthrough = next
+      window.computerMonitor?.setPointerPassthrough(next)
+    }
+    window.addEventListener('mousemove', onMove, { passive: true })
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [settings.display.mode, settings.display.clickThrough])
 
   useEffect(() => {
     document.documentElement.classList.toggle('reduced-motion', settings.reducedMotion)
@@ -62,6 +109,7 @@ export default function App() {
     void window.computerMonitor?.getWindowChrome?.().then(next => { if (next) setChrome(next) })
     const syncDisplay = (display: DisplayState) => setSettings(current => {
       const next = { ...current, display: { ...current.display, ...display } }
+      lastNative.current = nativeChromeKey(next)
       localStorage.setItem('computer-monitor-settings', JSON.stringify(next))
       return next
     })
@@ -105,6 +153,7 @@ export default function App() {
   }
 
   const closeSettings = async () => {
+    window.computerMonitor?.setPointerPassthrough(false)
     setSettingsOpen(false)
     await window.computerMonitor?.restoreAfterSettings()
   }
@@ -120,18 +169,22 @@ export default function App() {
     setSettings(validated)
     localStorage.setItem('computer-monitor-settings', JSON.stringify(validated))
     document.documentElement.classList.toggle('reduced-motion', validated.reducedMotion)
-    await window.computerMonitor?.setFullscreen(validated.fullscreen)
-    await window.computerMonitor?.setTrayEnabled(validated.showTrayIcon)
-    await window.computerMonitor?.setMinimizeToTray(validated.minimizeToTray)
-    await window.computerMonitor?.setLaunchAtStartup(validated.launchAtStartup)
-    const applied = await window.computerMonitor?.setDisplayState(validated.display)
-    if (applied) {
-      validated = { ...validated, display: { ...validated.display, ...applied } }
-      setSettings(validated)
-      localStorage.setItem('computer-monitor-settings', JSON.stringify(validated))
-    }
-    if (validated.display.sizePreset !== 'custom' && (validated.display.mode === 'bar' || validated.display.mode === 'mini')) {
-      await window.computerMonitor?.setSizePreset(validated.display.sizePreset)
+    const nativeKey = nativeChromeKey(validated)
+    if (nativeKey !== lastNative.current) {
+      lastNative.current = nativeKey
+      await window.computerMonitor?.setFullscreen(validated.fullscreen)
+      await window.computerMonitor?.setTrayEnabled(validated.showTrayIcon)
+      await window.computerMonitor?.setMinimizeToTray(validated.minimizeToTray)
+      await window.computerMonitor?.setLaunchAtStartup(validated.launchAtStartup)
+      const applied = await window.computerMonitor?.setDisplayState(validated.display)
+      if (applied) {
+        validated = { ...validated, display: { ...validated.display, ...applied } }
+        setSettings(validated)
+        localStorage.setItem('computer-monitor-settings', JSON.stringify(validated))
+      }
+      if (validated.display.sizePreset !== 'custom' && (validated.display.mode === 'bar' || validated.display.mode === 'mini')) {
+        await window.computerMonitor?.setSizePreset(validated.display.sizePreset)
+      }
     }
     if (connection) {
       try {
@@ -176,10 +229,18 @@ export default function App() {
   } as React.CSSProperties
 
   if (overlay) {
-    return <OverlayBar snapshot={snapshot} state={state} settings={settings}
-      style={overlayStyle} settingsOpen={settingsOpen}
-      onOpenSettings={() => void openSettings()}
-      onCloseSettings={() => void closeSettings()} />
+    return (
+      <>
+        <OverlayBar snapshot={snapshot} state={state} settings={settings}
+          style={overlayStyle} settingsOpen={settingsOpen}
+          onOpenSettings={() => void openSettings()}
+          onCloseSettings={() => void closeSettings()} />
+        {settingsOpen && <SettingsPanel value={settings} sensorStatus={statusDetail(state, lastUpdate)}
+          displays={displays} networkAdapters={snapshot?.network?.adapters ?? []}
+          onChange={saveSettings} onClose={closeSettings}
+          onResetLayout={() => void window.computerMonitor?.resetWindowLayout?.()} />}
+      </>
+    )
   }
 
   const toolbarMode = activeToolbarMode(settings.display.mode, chrome.maximized, chrome.fullscreen)
@@ -254,13 +315,13 @@ export default function App() {
             <div className="network-speeds" aria-label="Network speeds">
               {settings.network?.showDownload !== false && (
                 <div className="network-speeds__row">
-                  <span>Download</span>
+                  <span>Downloading</span>
                   <strong>{formatMbps(snapshot?.network?.downloadMbps)}</strong>
                 </div>
               )}
               {settings.network?.showUpload !== false && (
                 <div className="network-speeds__row">
-                  <span>Upload</span>
+                  <span>Uploading</span>
                   <strong>{formatMbps(snapshot?.network?.uploadMbps)}</strong>
                 </div>
               )}
@@ -268,6 +329,7 @@ export default function App() {
                 <div className="availability"><span>Metrics</span><strong>Hidden</strong></div>
               )}
             </div>
+            <NetworkSpeedTest />
             <div className="availability">
               <span>Interface</span>
               <strong>{snapshot?.network?.adapterKind ?? 'N/A'}</strong>
@@ -338,7 +400,7 @@ function ModeSwitcher({ mode, compact, onChange }: {
     )
   }
   return (
-    <div className="mode-switch" role="tablist" aria-label="Display mode">
+    <div className="mode-switch" role="tablist" aria-label="Display mode" data-click-through-control>
       {modeOptions.map(option => {
         const Icon = option.icon
         return (

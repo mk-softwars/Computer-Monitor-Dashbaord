@@ -37,6 +37,13 @@ contextBridge.exposeInMainWorld('computerMonitor', {
     ipcRenderer.on('open-settings', handler)
     return () => ipcRenderer.removeListener('open-settings', handler)
   },
+  startSpeedTest: () => ipcRenderer.invoke('speedtest:start'),
+  cancelSpeedTest: () => ipcRenderer.invoke('speedtest:cancel'),
+  onSpeedTestProgress: (callback: (progress: { phase: string; mbps?: number; error?: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, progress: { phase: string; mbps?: number; error?: string }) => callback(progress)
+    ipcRenderer.on('speedtest:progress', handler)
+    return () => ipcRenderer.removeListener('speedtest:progress', handler)
+  },
   onMonitorChanged: (callback: () => void) => {
     const handler = () => callback()
     ipcRenderer.on('monitor-ready', handler)

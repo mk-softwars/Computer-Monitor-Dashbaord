@@ -33,6 +33,7 @@ export function normalizeTheme(value: unknown): AppTheme {
 export function applyTheme(theme: AppTheme) {
   if (typeof document === 'undefined') return
   document.documentElement.dataset.theme = theme
+  window.computerMonitor?.setPointerPassthrough?.(false)
 }
 
 export function applyStoredTheme() {

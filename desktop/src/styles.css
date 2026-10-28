@@ -34,7 +34,7 @@ html.overlay-shell, html.overlay-shell body, html.overlay-shell #root {
   position: relative;
   overflow-x: hidden;
   overflow-y: auto;
-  -webkit-app-region: drag;
+  -webkit-app-region: no-drag;
   background:
     radial-gradient(circle at 18% 10%, rgb(0 92 255 / calc(var(--rgb-intensity) * .18)), transparent 30%),
     radial-gradient(circle at 84% 23%, rgb(161 42 255 / calc(var(--rgb-intensity) * .18)), transparent 34%),
@@ -104,7 +104,7 @@ html.overlay-shell, html.overlay-shell body, html.overlay-shell #root {
 .live-status--live span { color: var(--cyan); }
 @keyframes pulse { 50% { opacity: .35; box-shadow: 0 0 18px 5px var(--cyan); } }
 .mode-switch { display: flex; height: 44px; padding: 3px; gap: 2px; border-radius: 10px; border: 1px solid rgb(111 149 201 / .2); background: rgb(7 8 25 / .75); -webkit-app-region: no-drag; }
-.mode-switch button { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 7px; padding: 0 10px; background: transparent; color: #7d90ab; font: 700 10px Rajdhani, sans-serif; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+.mode-switch button { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 7px; padding: 0 10px; background: #070819; color: #7d90ab; font: 700 10px Rajdhani, sans-serif; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; white-space: nowrap; -webkit-app-region: no-drag; }
 .mode-switch button svg { width: 13px; height: 13px; }
 .mode-switch button:hover, .mode-switch button:focus-visible { color: var(--cyan); outline: none; }
 .mode-switch button.is-active { color: var(--cyan); background: rgb(0 223 255 / .12); box-shadow: 0 0 12px rgb(0 223 255 / .12); }
@@ -187,6 +187,28 @@ html.overlay-shell, html.overlay-shell body, html.overlay-shell #root {
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 12px color-mix(in srgb, var(--blue), transparent 55%);
 }
+.network-speed-test { display: grid; gap: 8px; min-width: 0; padding-top: 4px; }
+.network-speed-test__status {
+  margin: 0;
+  color: #7b8eaa;
+  font: 700 11px Rajdhani, sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.network-speed-test__status.is-result {
+  color: var(--cyan);
+  font: 600 18px Bahnschrift, "Segoe UI Variable Display", sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--cyan), transparent 55%);
+}
+.network-speed-test__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.network-speed-test__button { padding: 8px 12px; -webkit-app-region: no-drag; }
+.network-speed-test small {
+  color: #617591;
+  font-size: 10px;
+  line-height: 1.4;
+}
 .compact-card > header .card__icon { color: var(--compact); border-color: color-mix(in srgb, var(--compact), transparent 70%); }
 .compact-card__body { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: center; gap: 17px; margin-top: 10px; position: relative; z-index: 1; }
 .compact-card .thermal { grid-template-columns: auto 1fr; }
@@ -204,7 +226,7 @@ html.overlay-shell, html.overlay-shell body, html.overlay-shell #root {
 .sensor-note { margin-top: 14px; padding: 10px 14px; color: #647892; font-size: 10px; line-height: 1.5; border-left: 2px solid rgb(255 123 40 / .5); background: rgb(255 123 40 / .025); }
 
 .window-controls { display: flex; align-items: center; overflow: hidden; border: 1px solid rgb(111 149 201 / .2); border-radius: 10px; background: rgb(11 9 32 / .72); -webkit-app-region: no-drag; }
-.window-controls button { width: 38px; height: 42px; display: grid; place-items: center; border: 0; border-right: 1px solid rgb(111 149 201 / .12); color: #8ba0ba; background: transparent; cursor: pointer; transition: .2s ease; }
+.window-controls button { width: 38px; height: 42px; display: grid; place-items: center; border: 0; border-right: 1px solid rgb(111 149 201 / .12); color: #8ba0ba; background: #0b0920; cursor: pointer; transition: .2s ease; -webkit-app-region: no-drag; }
 .window-controls button:last-child { border-right: 0; }
 .window-controls button:hover { color: var(--cyan); background: rgb(0 223 255 / .08); }
 .window-controls .window-controls__close:hover { color: white; background: rgb(255 42 104 / .72); }
@@ -319,8 +341,9 @@ html.overlay-shell, html.overlay-shell body, html.overlay-shell #root {
   border: 0;
   border-radius: 8px;
   color: #7d90ab;
-  background: transparent;
+  background: #090713;
   cursor: pointer;
+  -webkit-app-region: no-drag;
 }
 .overlay-actions button:hover, .overlay-actions button:focus-visible {
   color: var(--cyan);
@@ -378,11 +401,12 @@ html.overlay-shell, html.overlay-shell body, html.overlay-shell #root {
   border-radius: 8px;
   padding: 8px 12px;
   color: inherit;
-  background: transparent;
+  background: #090713;
   font: 600 11px Rajdhani, sans-serif;
   letter-spacing: .06em;
   text-transform: uppercase;
   cursor: pointer;
+  -webkit-app-region: no-drag;
 }
 .overlay-settings__actions button:hover { border-color: var(--cyan); color: var(--cyan); }
 .overlay-settings__actions .is-primary {
@@ -390,12 +414,12 @@ html.overlay-shell, html.overlay-shell body, html.overlay-shell #root {
   background: linear-gradient(100deg, var(--blue), var(--purple));
 }
 
-.settings-backdrop { position: fixed; z-index: 20; inset: 0; display: flex; justify-content: flex-end; max-width: 100%; max-height: 100%; background: rgb(1 1 8 / .72); backdrop-filter: blur(10px); }
-.settings-panel { width: min(720px, 100%); max-width: 100%; height: 100%; max-height: 100%; display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; padding: 30px; border-left: 1px solid rgb(0 223 255 / .22); background: linear-gradient(155deg, rgb(13 11 37 / .98), rgb(5 3 16 / .99)); box-shadow: -20px 0 70px rgb(0 0 0 / .5); animation: slide-in .25s ease-out; }
+.settings-backdrop { position: fixed; z-index: 20; inset: 0; display: flex; justify-content: flex-end; max-width: 100%; max-height: 100%; background: rgb(1 1 8 / .72); backdrop-filter: blur(10px); -webkit-app-region: no-drag; }
+.settings-panel { width: min(720px, 100%); max-width: 100%; height: 100%; max-height: 100%; display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; padding: 30px; border-left: 1px solid rgb(0 223 255 / .22); background: linear-gradient(155deg, #0d0b25, #050310); box-shadow: -20px 0 70px rgb(0 0 0 / .5); animation: slide-in .25s ease-out; pointer-events: auto; -webkit-app-region: no-drag; }
 .settings-shell { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; min-height: 0; }
-.settings-nav { display: grid; align-content: start; gap: 4px; overflow: auto; }
-.settings-nav button { text-align: left; border: 0; border-radius: 8px; padding: 9px 10px; color: #8aa0bb; background: transparent; font: 600 12px Rajdhani, sans-serif; letter-spacing: .04em; cursor: pointer; }
-.settings-nav button.is-active, .settings-nav button:hover { color: var(--cyan); background: rgb(0 223 255 / .08); }
+.settings-nav { display: grid; align-content: start; gap: 4px; overflow: auto; -webkit-app-region: no-drag; }
+.settings-nav button { text-align: left; border: 0; border-radius: 8px; padding: 9px 10px; color: #8aa0bb; background: #0d0b25; font: 600 12px Rajdhani, sans-serif; letter-spacing: .04em; cursor: pointer; pointer-events: auto; -webkit-app-region: no-drag; }
+.settings-nav button.is-active, .settings-nav button:hover { color: var(--cyan); background: #0c1c36; }
 .settings-body { min-width: 0; overflow-y: auto; padding-right: 6px; }
 .settings-note, .about-block { color: #7b90ab; font-size: 12px; line-height: 1.5; }
 @keyframes slide-in { from { transform: translateX(30px); opacity: 0; } }
@@ -415,8 +439,8 @@ input[type="range"] { accent-color: var(--purple); width: 135px; }
 .threshold-row > strong { font: 600 12px Rajdhani; }
 .threshold-row label { color: #7185a0; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
 .threshold-row input { width: 55px; margin: 0 3px 0 6px; padding: 5px; }
-.settings-panel footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-.button { border-radius: 8px; padding: 10px 17px; cursor: pointer; border: 1px solid rgb(112 143 184 / .22); background: transparent; font: 600 11px Rajdhani; letter-spacing: .08em; text-transform: uppercase; }
+.settings-panel footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 12px; padding-bottom: 8px; position: relative; z-index: 2; -webkit-app-region: no-drag; }
+.button { border-radius: 8px; padding: 10px 17px; cursor: pointer; border: 1px solid rgb(112 143 184 / .22); background: #090820; font: 600 11px Rajdhani; letter-spacing: .08em; text-transform: uppercase; -webkit-app-region: no-drag; }
 .button--ghost:hover { border-color: var(--cyan); color: var(--cyan); }
 .button--primary { border-color: var(--purple); background: linear-gradient(100deg, var(--blue), var(--purple)); box-shadow: 0 0 22px rgb(96 36 255 / .22); }
 
@@ -454,6 +478,12 @@ html.is-hidden .app::after, html.is-hidden .ambient { display: none; }
   .mode-switch button span { display: none; }
   .settings-shell { grid-template-columns: 1fr; }
   .settings-nav { grid-auto-flow: column; overflow-x: auto; }
+}
+@media (max-width: 900px), (max-height: 620px) {
+  .settings-shell { grid-template-columns: 1fr; }
+  .settings-nav { grid-auto-flow: column; overflow-x: auto; }
+  .settings-panel { padding: 16px; }
+  .settings-panel > header { margin-bottom: 12px; }
 }
 @container dashboard (max-width: 650px) {
   .brand__mark { display: none; }

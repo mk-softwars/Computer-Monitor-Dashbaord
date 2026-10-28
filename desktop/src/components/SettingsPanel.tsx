@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { applyTheme, DEFAULT_THEME, normalizeTheme, type AppTheme } from '../theme'
 import type { AppSettings, DisplayState } from '../types'
 import { ThemePicker } from './ThemePicker'
@@ -174,7 +175,7 @@ export function SettingsPanel({ value, sensorStatus, displays, networkAdapters =
       thresholds: { ...current.thresholds, [key]: { ...current.thresholds[key], [field]: number } },
     }))
 
-  return (
+  return createPortal(
     <div className="settings-backdrop" data-click-through-control role="presentation"
       onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
       <section className="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -186,6 +187,8 @@ export function SettingsPanel({ value, sensorStatus, displays, networkAdapters =
           <nav className="settings-nav" aria-label="Settings categories">
             {categories.map(item => (
               <button key={item.id} type="button" className={category === item.id ? 'is-active' : ''}
+                aria-current={category === item.id ? 'page' : undefined}
+                aria-pressed={category === item.id}
                 onClick={() => setCategory(item.id)}>{item.label}</button>
             ))}
           </nav>
@@ -250,7 +253,7 @@ export function SettingsPanel({ value, sensorStatus, displays, networkAdapters =
                   <option value="custom">Custom</option>
                 </select>
               </Row>
-              <p className="settings-note">Desktop Background shows the full dashboard behind other windows. It does not change the Windows wallpaper. Restore from the tray.</p>
+              <p className="settings-note">Desktop Background shows the full dashboard behind other windows. It does not change the Windows wallpaper. The dashboard stays clickable. Restore from the tray if it is hidden.</p>
               <button type="button" className="button" onClick={onResetLayout}>Reset window position</button>
             </>}
             {category === 'overlay' && <>
@@ -338,8 +341,9 @@ export function SettingsPanel({ value, sensorStatus, displays, networkAdapters =
                   onChange={e => patchNetwork({ showInMini: e.target.checked })} />
               </Row>
               <p className="settings-note">
-                Speeds are local interface counters, not an internet speed test. Idle links show 0.0 Mbps.
-                Unavailable adapters show N/A. Virtual adapters are ignored.
+                Downloading and Uploading are local interface counters, not an internet speed test. Idle links show
+                0.0 Mbps. Unavailable adapters show N/A. Virtual adapters are ignored. Test Internet Speed on the
+                dashboard card is optional, uses internet data, and runs only when you click it.
               </p>
             </>}
             {category === 'appearance' && <>
@@ -375,7 +379,7 @@ export function SettingsPanel({ value, sensorStatus, displays, networkAdapters =
               <div className="about-block">
                 <p><strong>Computer Monitor Dashboard</strong></p>
                 <p>Version {APP_VERSION}</p>
-                <p>GitHub repository: not configured on this copy</p>
+                <p>GitHub repository: https://github.com/mk-softwars/Computer-Monitor-Dashbaord</p>
                 <p>Hardware sensors: {sensorStatus}</p>
                 <p>This app does not send telemetry.</p>
               </div>
@@ -383,7 +387,7 @@ export function SettingsPanel({ value, sensorStatus, displays, networkAdapters =
           </div>
         </div>
         <footer>
-          <button className="button button--ghost" onClick={() => {
+          <button type="button" className="button button--ghost" onClick={() => {
             skip.current = true
             const defaults = defaultAppSettings()
             applyTheme(defaults.theme)
@@ -392,10 +396,11 @@ export function SettingsPanel({ value, sensorStatus, displays, networkAdapters =
           }}>
             Reset to defaults
           </button>
-          <button className="button button--primary" onClick={onClose}>Done</button>
+          <button type="button" className="button button--primary" onClick={() => { void onClose() }}>Done</button>
         </footer>
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
