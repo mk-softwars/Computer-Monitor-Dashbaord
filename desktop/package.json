@@ -39,7 +39,7 @@
   },
   "build": {
     "appId": "app.computermonitor.dashboard",
-    "productName": "Computer Monitor Dashboard",
+    "productName": "Computer Monitor Dashbaord",
     "directories": {
       "output": "../artifacts/release"
     },
@@ -72,7 +72,7 @@
       "target": ["nsis"]
     },
     "nsis": {
-      "artifactName": "Computer-Monitor-Dashboard-Setup.${ext}",
+      "artifactName": "Computer-Monitor-Dashbaord-Setup.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,

@@ -6,7 +6,7 @@
     <AssemblyName>ComputerMonitor.Service</AssemblyName>
     <RootNamespace>ComputerMonitor</RootNamespace>
     <Version>1.0.0</Version>
-    <Product>Computer Monitor Dashboard</Product>
+    <Product>Computer Monitor Dashbaord</Product>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
   <ItemGroup>

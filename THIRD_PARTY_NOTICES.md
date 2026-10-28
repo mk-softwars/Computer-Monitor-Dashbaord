@@ -1,6 +1,6 @@
 # Third-party notices
 
-Computer Monitor Dashboard includes open-source software. The application is
+Computer Monitor Dashbaord includes open-source software. The application is
 licensed under the MIT License; third-party components remain under their own
 licenses.
 
