@@ -47,8 +47,11 @@ Locking it or enabling click-through prevents accidental focus afterward.
 ## Click-through recovery
 
 When click-through is enabled, input passes to windows below the widget.
-Disable it from the tray menu or press **Ctrl+Shift+F10**. The shortcut also
-unlocks and shows the widget, so settings and Exit always remain accessible.
+It takes effect after **Save settings**. The Settings button remains interactive
+and opens an interactive settings panel; all other widget regions continue to
+pass clicks through. Disable click-through from Settings, the tray menu, or
+press **Ctrl+Shift+F10**. The shortcut also unlocks and shows the widget, so
+settings and Exit always remain accessible.
 
 ## Persistence and disconnected monitors
 

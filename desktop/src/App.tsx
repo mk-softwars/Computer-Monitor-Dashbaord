@@ -82,6 +82,26 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    if (!settings.display.clickThrough) {
+      window.computerMonitor?.setPointerPassthrough(false)
+      return
+    }
+    let lastPassthrough: boolean | null = null
+    const updatePointerPassthrough = (event: MouseEvent) => {
+      const target = document.elementFromPoint(event.clientX, event.clientY)
+      const passthrough = !target?.closest('[data-click-through-control]')
+      if (passthrough === lastPassthrough) return
+      lastPassthrough = passthrough
+      window.computerMonitor?.setPointerPassthrough(passthrough)
+    }
+    window.addEventListener('mousemove', updatePointerPassthrough)
+    return () => {
+      window.removeEventListener('mousemove', updatePointerPassthrough)
+      window.computerMonitor?.setPointerPassthrough(false)
+    }
+  }, [settings.display.clickThrough])
+
   const saveSettings = async (next: AppSettings) => {
     const validated: AppSettings = {
       ...next,
@@ -154,7 +174,7 @@ export default function App() {
             <small>{lastUpdate}</small>
           </div>
           <button className="icon-button" onClick={() => void window.computerMonitor?.toggleFullscreen()} aria-label="Toggle fullscreen"><Expand /></button>
-          <button className="icon-button" onClick={() => setSettingsOpen(true)} aria-label="Open settings"><Settings /></button>
+          <button className="icon-button" data-click-through-control onClick={() => setSettingsOpen(true)} aria-label="Open settings"><Settings /></button>
           <WindowControls />
         </div>
       </header>
@@ -271,7 +291,7 @@ function MiniMonitor({ snapshot, state, settings, style, onOpenSettings, setting
           aria-label={display.locked ? 'Unlock position' : 'Lock position'}>
           {display.locked ? <Lock /> : <Unlock />}
         </button>
-        <button onClick={onOpenSettings} aria-label="Open settings"><Settings /></button>
+        <button data-click-through-control onClick={onOpenSettings} aria-label="Open settings"><Settings /></button>
         <button onClick={() => void window.computerMonitor?.setDisplayState({ mode: 'full' })} aria-label="Open full dashboard"><Maximize2 /></button>
         <WindowControls compact />
       </div>

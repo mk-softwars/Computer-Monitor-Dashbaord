@@ -129,6 +129,13 @@ function showDashboard() {
   mainWindow.focus()
 }
 
+function setPointerPassthrough(passthrough: boolean) {
+  if (!mainWindow) return
+  const ignoreMouse = displayState.clickThrough && passthrough
+  mainWindow.setIgnoreMouseEvents(ignoreMouse, { forward: true })
+  mainWindow.setFocusable(!ignoreMouse)
+}
+
 function setTrayEnabled(enabled: boolean) {
   if (!enabled && displayState.clickThrough) return true
   trayEnabled = enabled
@@ -243,8 +250,7 @@ function applyDisplayState(patch: Partial<Omit<DisplayState, 'bounds'>>) {
   mainWindow.setAlwaysOnTop(!isDesktop && displayState.alwaysOnTop, 'floating')
   mainWindow.setSkipTaskbar(isDesktop)
   mainWindow.setOpacity(displayState.opacity)
-  mainWindow.setIgnoreMouseEvents(displayState.clickThrough, { forward: true })
-  mainWindow.setFocusable(!displayState.clickThrough)
+  setPointerPassthrough(displayState.clickThrough)
   if (process.platform === 'win32') {
     mainWindow.setBackgroundMaterial(displayState.glassBlur ? 'acrylic' : 'none')
   }
@@ -420,6 +426,9 @@ ipcMain.handle('desktop:getPreferences', () => ({
 ipcMain.handle('display:getState', () => displayState)
 ipcMain.handle('display:setState', (_event, patch: Partial<Omit<DisplayState, 'bounds'>>) =>
   applyDisplayState(patch))
+ipcMain.on('display:setPointerPassthrough', (_event, passthrough: boolean) => {
+  if (typeof passthrough === 'boolean') setPointerPassthrough(passthrough)
+})
 ipcMain.handle('display:setSizePreset', (_event, preset: 'compact' | 'normal') => {
   if (!mainWindow) return null
   const size = sizePresetBounds(displayState.mode, preset)

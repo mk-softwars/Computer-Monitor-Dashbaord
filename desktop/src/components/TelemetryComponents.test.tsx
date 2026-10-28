@@ -61,6 +61,8 @@ describe('telemetry components', () => {
     fireEvent.change(mode, { target: { value: 'mini' } })
     expect(mode).toHaveValue('mini')
     expect(onPreview).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByLabelText(/Click through/))
+    expect(onPreview).not.toHaveBeenCalled()
     fireEvent.change(screen.getByLabelText(/Transparency level/), { target: { value: '60' } })
     expect(onPreview).toHaveBeenLastCalledWith(expect.objectContaining({
       display: expect.objectContaining({ mode: 'mini', opacity: .4 }),

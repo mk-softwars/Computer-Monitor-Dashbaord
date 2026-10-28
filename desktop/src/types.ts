@@ -96,6 +96,7 @@ declare global {
       }>
       getDisplayState(): Promise<DisplayState>
       setDisplayState(patch: Partial<DisplayState>): Promise<DisplayState>
+      setPointerPassthrough(passthrough: boolean): void
       setSizePreset(preset: 'compact' | 'normal'): Promise<{ width: number; height: number } | null>
       onDisplayStateChanged(callback: (state: DisplayState) => void): () => void
       onOpenSettings(callback: () => void): () => void

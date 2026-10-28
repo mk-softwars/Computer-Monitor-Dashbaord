@@ -35,7 +35,7 @@ export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPan
   })
 
   return (
-    <div className="settings-backdrop" role="presentation" onMouseDown={(event) => {
+    <div className="settings-backdrop" data-click-through-control role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose()
     }}>
       <section className="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -132,7 +132,7 @@ export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPan
           <label className="setting-row">
             <span><strong>Click through</strong><small>Press Ctrl+Shift+F10 or use the tray to disable</small></span>
             <input type="checkbox" checked={draft.display.clickThrough}
-              onChange={e => updateDisplay({ clickThrough: e.target.checked })} />
+              onChange={e => updateDisplay({ clickThrough: e.target.checked }, false)} />
           </label>
           <label className="setting-row">
             <span><strong>Transparent panel</strong><small>Keep text visible without the panel fill</small></span>

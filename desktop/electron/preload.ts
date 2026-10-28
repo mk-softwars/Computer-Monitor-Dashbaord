@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('computerMonitor', {
   close: () => ipcRenderer.invoke('window:close'),
   getDisplayState: () => ipcRenderer.invoke('display:getState'),
   setDisplayState: (patch: unknown) => ipcRenderer.invoke('display:setState', patch),
+  setPointerPassthrough: (passthrough: boolean) => ipcRenderer.send('display:setPointerPassthrough', passthrough),
   setSizePreset: (preset: 'compact' | 'normal') => ipcRenderer.invoke('display:setSizePreset', preset),
   onDisplayStateChanged: (callback: (state: unknown) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, state: unknown) => callback(state)
