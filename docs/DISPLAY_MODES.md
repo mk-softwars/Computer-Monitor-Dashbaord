@@ -23,6 +23,10 @@ opacity, locking, and always-on-top remain available.
 Right-click the widget or use the system tray to change mode, opacity,
 always-on-top, lock, click-through, or exit the application.
 
+The Display Mode settings include a live **Transparency level** slider from
+0% (opaque) to 80% (most transparent). The fully transparent panel option
+remains available when only the telemetry text should be visible.
+
 ## Desktop background widget
 
 Windows does not provide a stable public API for embedding an arbitrary

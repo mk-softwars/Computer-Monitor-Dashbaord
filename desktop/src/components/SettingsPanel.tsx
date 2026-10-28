@@ -99,10 +99,10 @@ export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPan
             </select>
           </label>
           <label className="setting-row setting-row--slider">
-            <span><strong>Window opacity</strong><small>Applied immediately to the widget</small></span>
-            <input type="range" min="20" max="100" value={Math.round(draft.display.opacity * 100)}
-              onChange={e => updateDisplay({ opacity: Number(e.target.value) / 100 })} />
-            <output>{Math.round(draft.display.opacity * 100)}%</output>
+            <span><strong>Transparency level</strong><small>0% is opaque; changes apply immediately</small></span>
+            <input type="range" min="0" max="80" value={Math.round((1 - draft.display.opacity) * 100)}
+              onChange={e => updateDisplay({ opacity: 1 - Number(e.target.value) / 100 })} />
+            <output>{Math.round((1 - draft.display.opacity) * 100)}%</output>
           </label>
           <label className="setting-row setting-row--slider">
             <span><strong>Text size</strong><small>Scale compact telemetry values</small></span>
