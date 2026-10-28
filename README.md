@@ -1,19 +1,21 @@
 # Computer Monitor Dashboard
 
-A futuristic RGB Windows hardware monitor for this PC. It shows real-time CPU,
-GPU, RAM, VRAM, and storage **usage percentages**, plus **temperatures when
-the hardware actually exposes them**. Missing sensors are shown as **N/A**.
-Values are not invented.
+**Windows hardware monitor** for real-time **CPU**, **GPU**, **RAM**, **VRAM**,
+and **storage** usage, with temperatures when the PC actually exposes them.
 
-![Full RGB dashboard](docs/screenshots/dashboard.jpg)
+This is a local RGB system monitor and **gaming overlay** for Windows. Missing
+sensors show **N/A**. Values are not invented or estimated.
 
-## Download for Windows
+![Windows RGB hardware monitor dashboard for CPU, GPU, RAM, and storage](docs/screenshots/dashboard.jpg)
 
-**Get the installer from the latest GitHub Release:**
+**[Download for Windows (installer)](https://github.com/mk-softwars/Computer-Monitor-Dashbaord/releases/latest)**  
+File: `Computer-Monitor-Dashboard-Setup.exe` · Windows x64 · no development tools required
 
-**[Download Computer Monitor Dashboard](https://github.com/mk-softwars/Computer-Monitor-Dashbaord/releases/latest)**
+## Download the Windows installer
 
-Direct setup file name: `Computer-Monitor-Dashboard-Setup.exe`
+Get the latest setup from GitHub Releases:
+
+**[Download Computer-Monitor-Dashboard-Setup.exe](https://github.com/mk-softwars/Computer-Monitor-Dashbaord/releases/latest)**
 
 You do **not** need Cursor, Node.js, or the .NET SDK. The installer includes
 the desktop app and a self-contained hardware-monitoring service.
@@ -60,7 +62,7 @@ source of the file, not a checksum from an unofficial site.
 
 ## Features
 
-Documented from the current application:
+What the current Windows app actually does:
 
 - Real-time hardware monitoring on a local loopback service (default refresh
   1 second; 0.5, 2, or 5 seconds in Settings)
@@ -222,6 +224,18 @@ Hardware readings stay on this computer. See **[PRIVACY.md](PRIVACY.md)**.
 The software is provided **AS IS**. It is not a safety system and is not
 affiliated with Dell or Alienware. Read **[DISCLAIMER.md](DISCLAIMER.md)**
 before relying on any reading.
+
+## Report bugs and suggest features
+
+Please use **GitHub Issues** on this repository. That is the right place for
+crash reports, missing sensors on a specific PC, overlay problems, and
+feature ideas.
+
+**[Open an issue](https://github.com/mk-softwars/Computer-Monitor-Dashbaord/issues)**
+
+Include Windows version, display mode (Windowed, Full, Bar, Mini, or
+Desktop), and whether the status bar showed LIVE MONITORING. Do not attach
+hardware serial numbers or unrelated system logs.
 
 ## License
 
