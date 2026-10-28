@@ -23,9 +23,11 @@ opacity, locking, and always-on-top remain available.
 Right-click the widget or use the system tray to change mode, opacity,
 always-on-top, lock, click-through, or exit the application.
 
-The Display Mode settings include clear **Transparency** levels: None, Low,
-Medium, and High. Changes preview immediately. The fully transparent panel
-option remains available when only the telemetry text should be visible.
+The Display Mode settings include clear **Panel transparency** levels: None,
+Low, Medium, and High. Only the glass panel background fades, so telemetry
+labels and values remain crisp and readable. Selecting a level disables the
+conflicting text-only override. Text-only mode remains available when the
+panel background should be removed completely.
 
 ## Desktop background widget
 

@@ -189,12 +189,17 @@ function buildControlMenu() {
       click: ({ checked }) => applyDisplayState({ clickThrough: checked }),
     },
     {
-      label: 'Opacity',
-      submenu: [100, 80, 60, 40, 20].map(percent => ({
-        label: `${percent}%`,
+      label: 'Transparency',
+      submenu: [
+        { label: 'High', opacity: .28 },
+        { label: 'Medium', opacity: .55 },
+        { label: 'Low', opacity: .78 },
+        { label: 'None', opacity: .94 },
+      ].map(level => ({
+        label: level.label,
         type: 'radio' as const,
-        checked: Math.round(displayState.opacity * 100) === percent,
-        click: () => applyDisplayState({ opacity: percent / 100 }),
+        checked: Math.abs(displayState.opacity - level.opacity) < .02 && !displayState.panelTransparent,
+        click: () => applyDisplayState({ opacity: level.opacity, panelTransparent: false }),
       })),
     },
     {
@@ -251,7 +256,8 @@ function applyDisplayState(patch: Partial<Omit<DisplayState, 'bounds'>>) {
   mainWindow.setMovable(!displayState.locked)
   mainWindow.setAlwaysOnTop(!isDesktop && displayState.alwaysOnTop, 'floating')
   mainWindow.setSkipTaskbar(isDesktop)
-  mainWindow.setOpacity(displayState.opacity)
+  // Transparency is rendered on the panel background so telemetry text remains crisp.
+  mainWindow.setOpacity(1)
   setPointerPassthrough(displayState.clickThrough)
   if (process.platform === 'win32') {
     mainWindow.setBackgroundMaterial(displayState.glassBlur ? 'acrylic' : 'none')

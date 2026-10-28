@@ -144,7 +144,9 @@ export default function App() {
 
   const displayStyle = {
     '--rgb-intensity': settings.rgbIntensity / 100,
-    '--panel-opacity': settings.display.panelTransparent ? 0 : .88,
+    '--panel-opacity': settings.display.panelTransparent
+      ? 0
+      : Math.max(.28, Math.min(.94, settings.display.opacity)),
     '--text-scale': settings.display.textScale / 100,
   } as React.CSSProperties
 

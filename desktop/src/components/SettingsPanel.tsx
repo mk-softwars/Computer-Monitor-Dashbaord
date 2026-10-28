@@ -18,6 +18,19 @@ const thresholdLabels: Record<string, string> = {
   ram: 'Memory modules',
 }
 
+const transparencyLevels = [
+  { label: 'High', opacity: .28 },
+  { label: 'Medium', opacity: .55 },
+  { label: 'Low', opacity: .78 },
+  { label: 'None', opacity: .94 },
+]
+
+function closestTransparencyOpacity(opacity: number) {
+  return transparencyLevels.reduce((closest, level) =>
+    Math.abs(level.opacity - opacity) < Math.abs(closest - opacity) ? level.opacity : closest,
+  transparencyLevels[0].opacity)
+}
+
 export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPanelProps) {
   const [draft, setDraft] = useState(value)
   const updateThreshold = (key: string, field: 'warm' | 'hot', number: number) =>
@@ -99,13 +112,11 @@ export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPan
             </select>
           </label>
           <label className="setting-row">
-            <span><strong>Transparency</strong><small>Choose High, Medium, Low, or None</small></span>
-            <select value={draft.display.opacity}
-              onChange={e => updateDisplay({ opacity: Number(e.target.value) })}>
-              <option value={0.25}>High</option>
-              <option value={0.5}>Medium</option>
-              <option value={0.75}>Low</option>
-              <option value={1}>None</option>
+            <span><strong>Panel transparency</strong><small>Fades the glass background while keeping telemetry crisp</small></span>
+            <select value={closestTransparencyOpacity(draft.display.opacity)}
+              onChange={e => updateDisplay({ opacity: Number(e.target.value), panelTransparent: false })}>
+              {transparencyLevels.map(level =>
+                <option value={level.opacity} key={level.label}>{level.label}</option>)}
             </select>
           </label>
           <label className="setting-row setting-row--slider">
@@ -139,7 +150,7 @@ export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPan
               onChange={e => updateDisplay({ clickThrough: e.target.checked }, false)} />
           </label>
           <label className="setting-row">
-            <span><strong>Transparent panel</strong><small>Keep text visible without the panel fill</small></span>
+            <span><strong>Text-only mode</strong><small>Fully remove the panel; overrides the transparency level</small></span>
             <input type="checkbox" checked={draft.display.panelTransparent}
               onChange={e => updateDisplay({ panelTransparent: e.target.checked })} />
           </label>
