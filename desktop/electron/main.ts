@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, screen, shell, Tray } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, screen, shell, Tray, type Rectangle } from 'electron'
 import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -15,6 +15,8 @@ let trayEnabled = true
 let quitting = false
 let applyingBounds = false
 let windowReady = false
+let fullscreenActive = false
+let preFullscreenBounds: Rectangle | null = null
 const sessionToken = randomBytes(32).toString('hex')
 
 app.setAppUserModelId('app.computermonitor.dashboard')
@@ -242,7 +244,7 @@ function applyDisplayState(patch: Partial<Omit<DisplayState, 'bounds'>>) {
   }
   const isFull = displayState.mode === 'full'
   const isDesktop = displayState.mode === 'desktop'
-  if (!isFull && mainWindow.isFullScreen()) mainWindow.setFullScreen(false)
+  if (!isFull && fullscreenActive) void setWindowFullscreen(false)
   const minimum = minimumSize(displayState.mode)
   mainWindow.setMinimumSize(minimum.width, minimum.height)
   mainWindow.setResizable(!displayState.locked)
@@ -347,6 +349,8 @@ function createWindow() {
   })
   mainWindow.on('move', () => persistCurrentBounds())
   mainWindow.on('resize', () => persistCurrentBounds())
+  mainWindow.on('enter-full-screen', () => { fullscreenActive = true })
+  mainWindow.on('leave-full-screen', () => { fullscreenActive = false })
   mainWindow.on('close', (event) => {
     if (quitting || !trayEnabled) return
     event.preventDefault()
@@ -377,7 +381,7 @@ function createWindow() {
 }
 
 function persistCurrentBounds() {
-  if (!mainWindow || !windowReady || applyingBounds || mainWindow.isMaximized() || mainWindow.isFullScreen()) return
+  if (!mainWindow || !windowReady || applyingBounds || mainWindow.isMaximized() || fullscreenActive) return
   const bounds = mainWindow.getBounds()
   displayState.bounds[displayState.mode] = bounds
   const preset = sizePresetBounds(displayState.mode, displayState.sizePreset === 'compact' ? 'compact' : 'normal')
@@ -390,16 +394,39 @@ function persistCurrentBounds() {
   saveDisplayState()
 }
 
-ipcMain.handle('monitor:connection', () => endpoint ? { endpoint, token: sessionToken } : null)
-ipcMain.handle('window:toggleFullscreen', () => {
+async function setWindowFullscreen(enabled: boolean) {
   if (!mainWindow) return false
-  mainWindow.setFullScreen(!mainWindow.isFullScreen())
-  return mainWindow.isFullScreen()
+  if (fullscreenActive === enabled) return enabled
+  const window = mainWindow
+  if (enabled) {
+    preFullscreenBounds = window.getBounds()
+    fullscreenActive = true
+    window.setFullScreen(true)
+    await new Promise(resolve => setTimeout(resolve, 400))
+    if (!window.isFullScreen()) {
+      const display = screen.getDisplayMatching(preFullscreenBounds)
+      window.setBounds(display.bounds)
+    }
+    return true
+  }
+  fullscreenActive = false
+  window.setFullScreen(false)
+  await new Promise(resolve => setTimeout(resolve, 400))
+  if (preFullscreenBounds) {
+    applyingBounds = true
+    window.setBounds(safeBounds(preFullscreenBounds))
+    applyingBounds = false
+    preFullscreenBounds = null
+  }
+  return false
+}
+
+ipcMain.handle('monitor:connection', () => endpoint ? { endpoint, token: sessionToken } : null)
+ipcMain.handle('window:toggleFullscreen', async () => {
+  if (!mainWindow) return false
+  return setWindowFullscreen(!fullscreenActive)
 })
-ipcMain.handle('window:setFullscreen', (_event, enabled: boolean) => {
-  if (mainWindow && mainWindow.isFullScreen() !== enabled) mainWindow.setFullScreen(enabled)
-  return mainWindow?.isFullScreen() ?? false
-})
+ipcMain.handle('window:setFullscreen', (_event, enabled: boolean) => setWindowFullscreen(enabled))
 ipcMain.handle('window:minimize', () => mainWindow?.minimize())
 ipcMain.handle('window:toggleMaximize', () => {
   if (!mainWindow) return false

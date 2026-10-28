@@ -98,11 +98,15 @@ export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPan
               <option value="desktop">Desktop Background Widget</option>
             </select>
           </label>
-          <label className="setting-row setting-row--slider">
-            <span><strong>Transparency level</strong><small>0% is opaque; changes apply immediately</small></span>
-            <input type="range" min="0" max="80" value={Math.round((1 - draft.display.opacity) * 100)}
-              onChange={e => updateDisplay({ opacity: 1 - Number(e.target.value) / 100 })} />
-            <output>{Math.round((1 - draft.display.opacity) * 100)}%</output>
+          <label className="setting-row">
+            <span><strong>Transparency</strong><small>Choose High, Medium, Low, or None</small></span>
+            <select value={draft.display.opacity}
+              onChange={e => updateDisplay({ opacity: Number(e.target.value) })}>
+              <option value={0.25}>High</option>
+              <option value={0.5}>Medium</option>
+              <option value={0.75}>Low</option>
+              <option value={1}>None</option>
+            </select>
           </label>
           <label className="setting-row setting-row--slider">
             <span><strong>Text size</strong><small>Scale compact telemetry values</small></span>
