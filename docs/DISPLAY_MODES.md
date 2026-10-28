@@ -1,0 +1,46 @@
+# Display modes
+
+## Full dashboard
+
+The standard responsive RGB dashboard shows all detected CPU, GPU, memory,
+VRAM, and storage readings. The custom title bar supports drag, minimize,
+maximize/restore, close-to-tray, and fullscreen.
+
+## Floating mini monitor
+
+The frameless horizontal monitor presents CPU usage and temperature, GPU usage
+and temperature, RAM, VRAM, and primary fixed-drive capacity and temperature
+in one row. It can be resized across monitors and optionally kept above other
+applications.
+
+Right-click the widget or use the system tray to change mode, opacity,
+always-on-top, lock, click-through, or exit the application.
+
+## Desktop background widget
+
+Windows does not provide a stable public API for embedding an arbitrary
+Electron window below desktop icons. Techniques that re-parent windows into
+Explorer’s undocumented `WorkerW` hierarchy can break after Windows updates or
+restart Explorer.
+
+The application therefore uses a safe desktop-level mode:
+
+- The widget is removed from the taskbar.
+- Always-on-top is disabled.
+- Regular application windows naturally cover it.
+- Explorer, desktop icons, and the Windows shell are not modified.
+
+The widget may briefly rise in normal window order while it is being moved.
+Locking it or enabling click-through prevents accidental focus afterward.
+
+## Click-through recovery
+
+When click-through is enabled, input passes to windows below the widget.
+Disable it from the tray menu or press **Ctrl+Shift+F10**. The shortcut also
+unlocks and shows the widget, so settings and Exit always remain accessible.
+
+## Persistence and disconnected monitors
+
+Each display mode remembers its last size and position. At startup, stored
+bounds are checked against all connected monitors. If the previous monitor is
+missing, the window is safely centered on the primary display.

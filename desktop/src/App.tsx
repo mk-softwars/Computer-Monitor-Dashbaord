@@ -1,10 +1,10 @@
-import { Cpu, Database, Expand, Gauge, MemoryStick, Settings, Zap } from 'lucide-react'
+import { Cpu, Database, Expand, Gauge, Lock, Maximize2, MemoryStick, Minus, Settings, Unlock, X, Zap } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { NeonGauge } from './components/NeonGauge'
 import { SettingsPanel } from './components/SettingsPanel'
 import { ThermalStatus } from './components/ThermalStatus'
-import { useTelemetry } from './hooks/useTelemetry'
-import type { AppSettings, ThermalState } from './types'
+import { useTelemetry, type ConnectionState } from './hooks/useTelemetry'
+import type { AppSettings, DisplayState, TelemetrySnapshot, ThermalState } from './types'
 
 const defaultSettings: AppSettings = {
   refreshIntervalMs: 1000,
@@ -14,6 +14,19 @@ const defaultSettings: AppSettings = {
   showTrayIcon: true,
   minimizeToTray: false,
   launchAtStartup: false,
+  display: {
+    mode: 'full',
+    alwaysOnTop: false,
+    locked: false,
+    clickThrough: false,
+    opacity: 1,
+    panelTransparent: false,
+    glassBlur: false,
+    subtleFrame: true,
+    textScale: 100,
+    sizePreset: 'normal',
+    launchLastMode: true,
+  },
   thresholds: {
     cpu: { warm: 75, hot: 90 },
     gpu: { warm: 75, hot: 88 },
@@ -27,7 +40,14 @@ const defaultSettings: AppSettings = {
 function loadSettings(): AppSettings {
   try {
     const stored = localStorage.getItem('computer-monitor-settings')
-    return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings
+    if (!stored) return defaultSettings
+    const parsed = JSON.parse(stored) as Partial<AppSettings>
+    return {
+      ...defaultSettings,
+      ...parsed,
+      display: { ...defaultSettings.display, ...parsed.display },
+      thresholds: { ...defaultSettings.thresholds, ...parsed.thresholds },
+    }
   } catch {
     return defaultSettings
   }
@@ -46,8 +66,20 @@ export default function App() {
     void window.computerMonitor?.setFullscreen(settings.fullscreen)
     void window.computerMonitor?.setTrayEnabled(settings.showTrayIcon)
       .then(() => window.computerMonitor?.setMinimizeToTray(settings.minimizeToTray))
-  // Apply startup preference once; later changes are applied when saved.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const syncDisplay = (display: DisplayState) => setSettings(current => {
+      const next = { ...current, display }
+      localStorage.setItem('computer-monitor-settings', JSON.stringify(next))
+      return next
+    })
+    void window.computerMonitor?.getDisplayState().then(syncDisplay)
+    const stopDisplayListener = window.computerMonitor?.onDisplayStateChanged(syncDisplay)
+    const stopSettingsListener = window.computerMonitor?.onOpenSettings(() => setSettingsOpen(true))
+    return () => {
+      stopDisplayListener?.()
+      stopSettingsListener?.()
+    }
+    // Desktop preferences are synchronized by Electron after startup.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const saveSettings = async (next: AppSettings) => {
@@ -63,6 +95,10 @@ export default function App() {
     await window.computerMonitor?.setTrayEnabled(validated.showTrayIcon)
     await window.computerMonitor?.setMinimizeToTray(validated.minimizeToTray)
     await window.computerMonitor?.setLaunchAtStartup(validated.launchAtStartup)
+    await window.computerMonitor?.setDisplayState(validated.display)
+    if (validated.display.sizePreset !== 'custom' && validated.display.mode !== 'full') {
+      await window.computerMonitor?.setSizePreset(validated.display.sizePreset)
+    }
     if (connection) {
       try {
         await fetch(`${connection.endpoint}/api/settings`, {
@@ -79,9 +115,33 @@ export default function App() {
     }
   }
 
+  const previewSettings = (next: AppSettings) => {
+    void window.computerMonitor?.setDisplayState(next.display)
+    if (next.display.sizePreset !== 'custom' && next.display.mode !== 'full') {
+      void window.computerMonitor?.setSizePreset(next.display.sizePreset)
+    }
+  }
+
+  const displayStyle = {
+    '--rgb-intensity': settings.rgbIntensity / 100,
+    '--panel-opacity': settings.display.panelTransparent ? 0 : .88,
+    '--text-scale': settings.display.textScale / 100,
+  } as React.CSSProperties
+
+  if (settings.display.mode !== 'full') {
+    return <MiniMonitor snapshot={snapshot} state={state} settings={settings}
+      style={displayStyle} onOpenSettings={() => {
+        void window.computerMonitor?.setDisplayState({ mode: 'full' })
+        setSettingsOpen(true)
+      }}
+      settingsPanel={settingsOpen
+        ? <SettingsPanel value={settings} onSave={saveSettings} onPreview={previewSettings} onClose={() => setSettingsOpen(false)} />
+        : null} />
+  }
+
   return (
     <main className={settings.reducedMotion ? 'app reduced-motion' : 'app'}
-      style={{ '--rgb-intensity': settings.rgbIntensity / 100 } as React.CSSProperties}>
+      style={displayStyle}>
       <div className="ambient" aria-hidden><i /><i /><i /></div>
       <header className="topbar">
         <div className="brand">
@@ -95,6 +155,7 @@ export default function App() {
           </div>
           <button className="icon-button" onClick={() => void window.computerMonitor?.toggleFullscreen()} aria-label="Toggle fullscreen"><Expand /></button>
           <button className="icon-button" onClick={() => setSettingsOpen(true)} aria-label="Open settings"><Settings /></button>
+          <WindowControls />
         </div>
       </header>
 
@@ -160,9 +221,70 @@ export default function App() {
         <aside className="sensor-note">{snapshot.health.notes.join(' ')}</aside>
       ) : null}
 
-      {settingsOpen && <SettingsPanel value={settings} onSave={saveSettings} onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && <SettingsPanel value={settings} onSave={saveSettings} onPreview={previewSettings} onClose={() => setSettingsOpen(false)} />}
     </main>
   )
+}
+
+function MiniMonitor({ snapshot, state, settings, style, onOpenSettings, settingsPanel }: {
+  snapshot: TelemetrySnapshot | null
+  state: ConnectionState
+  settings: AppSettings
+  style: React.CSSProperties
+  onOpenSettings(): void
+  settingsPanel: React.ReactNode
+}) {
+  const gpu = snapshot?.gpus[0]
+  const drive = snapshot?.storage[0]
+  const storageLabel = drive?.kind?.toUpperCase() || 'SSD'
+  const metrics = [
+    { label: 'CPU', value: formatPercent(snapshot?.cpu.usagePercent), tone: 'blue' },
+    { label: 'CPU TEMP', value: formatTemperature(snapshot?.cpu.temperatureCelsius), tone: thermalTone(snapshot?.cpu.thermalState) },
+    { label: 'GPU', value: formatPercent(gpu?.usagePercent), tone: 'purple' },
+    { label: 'GPU TEMP', value: formatTemperature(gpu?.temperatureCelsius), tone: thermalTone(gpu?.thermalState) },
+    { label: 'RAM', value: formatPercent(snapshot?.memory.usagePercent), tone: 'cyan' },
+    { label: 'VRAM', value: formatPercent(gpu?.vramUsagePercent), tone: 'pink' },
+    { label: storageLabel, value: formatPercent(drive?.usedPercent), tone: 'violet' },
+    { label: `${storageLabel} TEMP`, value: formatTemperature(drive?.temperatureCelsius), tone: thermalTone(drive?.thermalState) },
+  ]
+  const display = settings.display
+  return (
+    <main className={[
+      'mini-shell',
+      `mini-shell--${display.mode}`,
+      display.panelTransparent ? 'mini-shell--transparent' : '',
+      display.glassBlur ? 'mini-shell--glass' : '',
+      display.subtleFrame ? 'mini-shell--framed' : '',
+      settings.reducedMotion ? 'reduced-motion' : '',
+    ].filter(Boolean).join(' ')} style={style}>
+      <div className="mini-brand"><i className={state === 'live' ? 'is-live' : ''} /><span>CMD</span></div>
+      <div className="mini-metrics">
+        {metrics.map(metric => (
+          <div className={`mini-metric mini-metric--${metric.tone}`} key={metric.label}>
+            <small>{metric.label}</small><strong>{metric.value}</strong>
+          </div>
+        ))}
+      </div>
+      <div className="mini-actions">
+        <button onClick={() => void window.computerMonitor?.setDisplayState({ locked: !display.locked })}
+          aria-label={display.locked ? 'Unlock position' : 'Lock position'}>
+          {display.locked ? <Lock /> : <Unlock />}
+        </button>
+        <button onClick={onOpenSettings} aria-label="Open settings"><Settings /></button>
+        <button onClick={() => void window.computerMonitor?.setDisplayState({ mode: 'full' })} aria-label="Open full dashboard"><Maximize2 /></button>
+        <WindowControls compact />
+      </div>
+      {settingsPanel}
+    </main>
+  )
+}
+
+function WindowControls({ compact = false }: { compact?: boolean }) {
+  return <div className={`window-controls${compact ? ' window-controls--compact' : ''}`}>
+    <button onClick={() => void window.computerMonitor?.minimize()} aria-label="Minimize"><Minus /></button>
+    {!compact && <button onClick={() => void window.computerMonitor?.toggleMaximize()} aria-label="Maximize or restore"><Maximize2 /></button>}
+    <button className="window-controls__close" onClick={() => void window.computerMonitor?.close()} aria-label="Close"><X /></button>
+  </div>
 }
 
 function HardwareCard({ title, name, tone, icon, children }: {
@@ -189,6 +311,14 @@ function MetricLine({ label, value }: { label: string; value: string }) {
 
 function formatPercent(value: number | null | undefined) {
   return value == null ? 'N/A' : `${Math.round(value)}%`
+}
+
+function formatTemperature(value: number | null | undefined) {
+  return value == null ? 'N/A' : `${Math.round(value)}°`
+}
+
+function thermalTone(state: ThermalState | undefined) {
+  return state === 'hot' ? 'hot' : state === 'warm' ? 'warm' : 'cyan'
 }
 
 export function thermalClass(state: ThermalState) {

@@ -5,6 +5,7 @@ import type { AppSettings } from '../types'
 interface SettingsPanelProps {
   value: AppSettings
   onSave(value: AppSettings): void
+  onPreview?(value: AppSettings): void
   onClose(): void
 }
 
@@ -17,7 +18,7 @@ const thresholdLabels: Record<string, string> = {
   ram: 'Memory modules',
 }
 
-export function SettingsPanel({ value, onSave, onClose }: SettingsPanelProps) {
+export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPanelProps) {
   const [draft, setDraft] = useState(value)
   const updateThreshold = (key: string, field: 'warm' | 'hot', number: number) =>
     setDraft(current => ({
@@ -27,6 +28,11 @@ export function SettingsPanel({ value, onSave, onClose }: SettingsPanelProps) {
         [key]: { ...current.thresholds[key], [field]: number },
       },
     }))
+  const updateDisplay = (patch: Partial<AppSettings['display']>, preview = true) => setDraft(current => {
+    const next = { ...current, display: { ...current.display, ...patch } }
+    if (preview) onPreview?.(next)
+    return next
+  })
 
   return (
     <div className="settings-backdrop" role="presentation" onMouseDown={(event) => {
@@ -78,6 +84,76 @@ export function SettingsPanel({ value, onSave, onClose }: SettingsPanelProps) {
           <input type="checkbox" checked={draft.launchAtStartup}
             onChange={e => setDraft({ ...draft, launchAtStartup: e.target.checked })} />
         </label>
+
+        <div className="thresholds display-settings">
+          <h3>Display mode</h3>
+          <p>Switch between the full dashboard and compact Windows widgets.</p>
+          <label className="setting-row">
+            <span><strong>Mode</strong><small>Choose the active dashboard layout</small></span>
+            <select value={draft.display.mode}
+              onChange={e => updateDisplay({ mode: e.target.value as AppSettings['display']['mode'] }, false)}>
+              <option value="full">Full Dashboard</option>
+              <option value="mini">Floating Mini Monitor</option>
+              <option value="desktop">Desktop Background Widget</option>
+            </select>
+          </label>
+          <label className="setting-row setting-row--slider">
+            <span><strong>Window opacity</strong><small>Applied immediately to the widget</small></span>
+            <input type="range" min="20" max="100" value={Math.round(draft.display.opacity * 100)}
+              onChange={e => updateDisplay({ opacity: Number(e.target.value) / 100 })} />
+            <output>{Math.round(draft.display.opacity * 100)}%</output>
+          </label>
+          <label className="setting-row setting-row--slider">
+            <span><strong>Text size</strong><small>Scale compact telemetry values</small></span>
+            <input type="range" min="70" max="160" value={draft.display.textScale}
+              onChange={e => updateDisplay({ textScale: Number(e.target.value) })} />
+            <output>{draft.display.textScale}%</output>
+          </label>
+          <label className="setting-row">
+            <span><strong>Widget size</strong><small>Custom size remains freely resizable</small></span>
+            <select value={draft.display.sizePreset}
+              onChange={e => updateDisplay({ sizePreset: e.target.value as AppSettings['display']['sizePreset'] })}>
+              <option value="compact">Compact</option>
+              <option value="normal">Normal</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          <label className="setting-row">
+            <span><strong>Always on top</strong><small>Keep the floating monitor above other apps</small></span>
+            <input type="checkbox" checked={draft.display.alwaysOnTop}
+              onChange={e => updateDisplay({ alwaysOnTop: e.target.checked })} />
+          </label>
+          <label className="setting-row">
+            <span><strong>Lock position</strong><small>Prevent accidental movement and resizing</small></span>
+            <input type="checkbox" checked={draft.display.locked}
+              onChange={e => updateDisplay({ locked: e.target.checked })} />
+          </label>
+          <label className="setting-row">
+            <span><strong>Click through</strong><small>Press Ctrl+Shift+F10 or use the tray to disable</small></span>
+            <input type="checkbox" checked={draft.display.clickThrough}
+              onChange={e => updateDisplay({ clickThrough: e.target.checked })} />
+          </label>
+          <label className="setting-row">
+            <span><strong>Transparent panel</strong><small>Keep text visible without the panel fill</small></span>
+            <input type="checkbox" checked={draft.display.panelTransparent}
+              onChange={e => updateDisplay({ panelTransparent: e.target.checked })} />
+          </label>
+          <label className="setting-row">
+            <span><strong>Glass blur</strong><small>Use Windows acrylic material when available</small></span>
+            <input type="checkbox" checked={draft.display.glassBlur}
+              onChange={e => updateDisplay({ glassBlur: e.target.checked })} />
+          </label>
+          <label className="setting-row">
+            <span><strong>Subtle frame</strong><small>Show a thin neon widget outline</small></span>
+            <input type="checkbox" checked={draft.display.subtleFrame}
+              onChange={e => updateDisplay({ subtleFrame: e.target.checked })} />
+          </label>
+          <label className="setting-row">
+            <span><strong>Launch in last mode</strong><small>Otherwise open the full dashboard</small></span>
+            <input type="checkbox" checked={draft.display.launchLastMode}
+              onChange={e => updateDisplay({ launchLastMode: e.target.checked })} />
+          </label>
+        </div>
 
         <div className="thresholds">
           <h3>Thermal warning thresholds</h3>

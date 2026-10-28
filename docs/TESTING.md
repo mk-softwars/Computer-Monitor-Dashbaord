@@ -11,6 +11,10 @@
 - The installed application starts and its monitor child process runs.
 - Silent uninstall completes and removes the test installation directory.
 - Project tests, npm audit, and NuGet vulnerability audit pass.
+- Floating mini mode renders all requested metrics in one horizontal row.
+- Desktop widget mode stays out of the taskbar and uses normal desktop z-order.
+- Mini and desktop bounds persist and are validated against connected displays.
+- Click-through has tray and Ctrl+Shift+F10 recovery paths.
 
 ## Required second-computer testing
 

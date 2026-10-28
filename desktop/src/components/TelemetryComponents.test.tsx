@@ -1,6 +1,39 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import type { AppSettings } from '../types'
 import { NeonGauge } from './NeonGauge'
+import { SettingsPanel } from './SettingsPanel'
 import { ThermalStatus } from './ThermalStatus'
+
+const settings: AppSettings = {
+  refreshIntervalMs: 1000,
+  rgbIntensity: 75,
+  reducedMotion: false,
+  fullscreen: false,
+  showTrayIcon: true,
+  minimizeToTray: false,
+  launchAtStartup: false,
+  display: {
+    mode: 'full',
+    alwaysOnTop: false,
+    locked: false,
+    clickThrough: false,
+    opacity: 1,
+    panelTransparent: false,
+    glassBlur: false,
+    subtleFrame: true,
+    textScale: 100,
+    sizePreset: 'normal',
+    launchLastMode: true,
+  },
+  thresholds: {
+    cpu: { warm: 75, hot: 90 },
+    gpu: { warm: 75, hot: 88 },
+    gpuHotspot: { warm: 90, hot: 105 },
+    ssd: { warm: 55, hot: 70 },
+    hdd: { warm: 45, hot: 55 },
+    ram: { warm: 60, hot: 75 },
+  },
+}
 
 describe('telemetry components', () => {
   it('clearly renders unavailable readings', () => {
@@ -17,5 +50,18 @@ describe('telemetry components', () => {
     expect(screen.getByText('88')).toBeInTheDocument()
     expect(screen.getByText('94°C')).toBeInTheDocument()
     expect(screen.getByText('HOT')).toBeInTheDocument()
+  })
+
+  it('previews display mode and opacity controls immediately', () => {
+    const onPreview = vi.fn()
+    render(<SettingsPanel value={settings} onSave={vi.fn()} onPreview={onPreview} onClose={vi.fn()} />)
+    const mode = screen.getByLabelText(/Mode/)
+    fireEvent.change(mode, { target: { value: 'mini' } })
+    expect(mode).toHaveValue('mini')
+    expect(onPreview).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText(/Window opacity/), { target: { value: '60' } })
+    expect(onPreview).toHaveBeenLastCalledWith(expect.objectContaining({
+      display: expect.objectContaining({ mode: 'mini', opacity: .6 }),
+    }))
   })
 })

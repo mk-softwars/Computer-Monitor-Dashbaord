@@ -1,4 +1,19 @@
 export type ThermalState = 'unavailable' | 'normal' | 'warm' | 'hot'
+export type DisplayMode = 'full' | 'mini' | 'desktop'
+
+export interface DisplayState {
+  mode: DisplayMode
+  alwaysOnTop: boolean
+  locked: boolean
+  clickThrough: boolean
+  opacity: number
+  panelTransparent: boolean
+  glassBlur: boolean
+  subtleFrame: boolean
+  textScale: number
+  sizePreset: 'compact' | 'normal' | 'custom'
+  launchLastMode: boolean
+}
 
 export interface TelemetrySnapshot {
   timestamp: string
@@ -53,6 +68,7 @@ export interface AppSettings {
   showTrayIcon: boolean
   minimizeToTray: boolean
   launchAtStartup: boolean
+  display: DisplayState
   thresholds: Record<string, Threshold>
 }
 
@@ -70,11 +86,19 @@ declare global {
       setTrayEnabled(enabled: boolean): Promise<boolean>
       setMinimizeToTray(enabled: boolean): Promise<boolean>
       setLaunchAtStartup(enabled: boolean): Promise<boolean>
+      minimize(): Promise<void>
+      toggleMaximize(): Promise<boolean>
+      close(): Promise<void>
       getDesktopPreferences(): Promise<{
         launchAtStartup: boolean
         trayEnabled: boolean
         minimizeToTray: boolean
       }>
+      getDisplayState(): Promise<DisplayState>
+      setDisplayState(patch: Partial<DisplayState>): Promise<DisplayState>
+      setSizePreset(preset: 'compact' | 'normal'): Promise<{ width: number; height: number } | null>
+      onDisplayStateChanged(callback: (state: DisplayState) => void): () => void
+      onOpenSettings(callback: () => void): () => void
       onMonitorChanged(callback: () => void): () => void
     }
   }
