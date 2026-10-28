@@ -13,6 +13,7 @@ security impact. Do not include hardware serial numbers or unrelated logs.
 
 The desktop application and local monitor service are in scope. The monitor is
 designed to bind only to `127.0.0.1` and requires a per-launch random token.
-The project does not operate a cloud service or collect telemetry.
+What the app stores locally and what it does not send is described in
+[PRIVACY.md](PRIVACY.md).
 
 Only the latest published version is supported with security fixes.

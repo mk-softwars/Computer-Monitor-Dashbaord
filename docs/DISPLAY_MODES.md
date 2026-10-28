@@ -68,3 +68,6 @@ games.
 Each display mode remembers its last size and position. At startup, stored
 bounds are checked against all connected monitors. If the previous monitor is
 missing, the window is safely placed on the primary display.
+
+If the overlay is hidden, unclickable, or off-screen, see
+[Troubleshooting](../TROUBLESHOOTING.md).

@@ -1,101 +1,244 @@
 # Computer Monitor Dashboard
 
-A private-by-design Windows hardware monitor with a neon blue, purple, pink,
-and cyan gaming interface. It detects the computer it is running on and shows
-real sensor readings—never generated or estimated values.
+A futuristic RGB Windows hardware monitor for this PC. It shows real-time CPU,
+GPU, RAM, VRAM, and storage **usage percentages**, plus **temperatures when
+the hardware actually exposes them**. Missing sensors are shown as **N/A**.
+Values are not invented.
 
 ![Computer Monitor Dashboard](docs/screenshots/dashboard.png)
 
-![Floating bar monitor](docs/screenshots/mini-monitor.png)
+## Download for Windows
 
-![Desktop widget mode](docs/screenshots/desktop-widget.png)
+**Get the installer from the latest GitHub Release:**
+
+**[Download Computer Monitor Dashboard](https://github.com/mk-softwars/Computer-Monitor-Dashbaord/releases/latest)**
+
+Direct setup file name: `Computer-Monitor-Dashboard-Setup.exe`
+
+You do **not** need Cursor, Node.js, or the .NET SDK. The installer includes
+the desktop app and a self-contained hardware-monitoring service.
+
+### Install
+
+1. Open the [latest GitHub Release](https://github.com/mk-softwars/Computer-Monitor-Dashbaord/releases/latest).
+2. Download **Computer-Monitor-Dashboard-Setup.exe**.
+3. Run the installer.
+4. Choose an installation folder when asked. The setup is a standard NSIS
+   installer (not one-click).
+5. Launch **Computer Monitor Dashboard** from the desktop shortcut or the
+   Windows Start menu. Both shortcuts are created by the installer.
+6. Wait until the top bar shows **LIVE MONITORING**. The app starts a local
+   sensor service and then reads this computer.
+7. Pick a display mode: **Windowed**, **Full**, **Bar**, **Mini**, or
+   **Desktop**.
+
+### Windows security prompts
+
+v1.0.0 is **unsigned**. Windows SmartScreen or another filter may say the app
+is unrecognized.
+
+- Confirm you downloaded it from this repository’s Releases page.
+- If SmartScreen appears, you can open **More info** and choose **Run anyway**
+  only if you trust that source.
+- **Do not** turn off Windows Security, antivirus, or SmartScreen to install
+  the app.
+
+Administrator rights are **not** required for a normal install. Some extra
+drive temperatures may appear only if you later run the app elevated.
+
+### Checksums
+
+This release does **not** currently attach SHA-256 checksum files. When a
+future release publishes a hash, you can compare it in PowerShell:
+
+```powershell
+Get-FileHash .\Computer-Monitor-Dashboard-Setup.exe -Algorithm SHA256
+```
+
+Until an official hash is published, treat the GitHub Releases page as the
+source of the file, not a checksum from an unofficial site.
 
 ## Features
 
-- Real-time CPU utilization, model, temperature, and optional per-core view
-- NVIDIA, AMD, and Intel GPU support where exposed by the installed driver
-- GPU utilization, temperature, hotspot, and VRAM utilization when available
-- Physical RAM utilization and module temperature when a sensor exists
-- Occupied capacity and available drive temperatures for fixed storage
-- Separate normal, warm, hot, and unavailable thermal states
-- Configurable refresh interval, thermal thresholds, RGB intensity, and reduced motion
-- Full Dashboard, Windowed, Bar, Mini, and Desktop Background display modes
-- Always on Top for the floating Bar and Mini overlays
-- Overlay opacity from 10% to 100% (default 90%) on Bar and Mini only
-- Click-through so games and apps underneath the overlay stay clickable
-- Click-through recovery from the system tray or a global shortcut (Ctrl+Shift+F10 by default)
-- Optional lock overlay position, preferred monitor, and remember last layout
-- Optional system tray, minimize-to-tray, and launch with Windows (off by default)
-- Local-only monitoring with no accounts, analytics, advertisements, or cloud
+Documented from the current application:
 
-Unsupported sensor values are displayed as `N/A`. Storage percentages represent
-occupied capacity, not disk activity or transfer speed.
+- Real-time hardware monitoring on a local loopback service (default refresh
+  1 second; 0.5, 2, or 5 seconds in Settings)
+- CPU utilization and CPU temperature when a package or core-max sensor exists
+- Optional per-core utilization on the full dashboard when those sensors exist
+- GPU utilization, temperature, hotspot (when present), and VRAM use for the
+  first detected GPU
+- NVIDIA, AMD, and Intel GPU **types** are queried when LibreHardwareMonitor
+  reports them. This project’s development PC validated an **NVIDIA** path.
+- RAM utilization from Windows; RAM temperature only if a memory sensor exists
+- Fixed-drive occupied capacity and drive temperature when the device exposes
+  one
+- Thermal labels: Normal, Warm, Hot, or Unavailable (thresholds are editable)
+- Fullscreen (the expand control) and a resizable **Windowed** dashboard
+- Maximized **Full** dashboard
+- Floating **Bar** and **Mini** overlays (about 750×85 pixels)
+- **Desktop Background** mode (dashboard over the work area; not wallpaper)
+- **Always on Top** for Bar and Mini
+- Overlay opacity 10–100% (default 90%) on Bar and Mini only
+- **Click-Through** on Bar and Mini, with tray and keyboard recovery
+- System tray, optional minimize-to-tray, optional start with Windows
+- RGB neon blue, purple, pink, and cyan visual design inspired by gaming
+  hardware lighting (including Alienware-style RGB). See
+  [No affiliation](DISCLAIMER.md#h-no-affiliation).
 
-## Download and install
+The app does **not** show clock speeds, fan RPM, voltages, power draw, network
+speed, disk transfer rate, or FPS.
 
-Anyone can install this on Windows without Cursor, Node.js, .NET, or other
-development tools.
+## Known limitations
 
-1. Open the repository **Releases** page.
-2. Download `Computer-Monitor-Dashboard-Setup.exe` from **v1.0.0**.
-3. Run the installer and choose an installation directory.
-4. Launch **Computer Monitor Dashboard** from the Start menu or desktop.
+- **Unsupported sensors.** If a value is **N/A**, this PC did not provide that
+  reading. Many CPU, RAM, and drive temperatures are missing on ordinary
+  laptops and desktops.
+- **Fullscreen games.** Exclusive fullscreen can cover the overlay. Use
+  borderless windowed if you want the bar visible. The app does not inject
+  into games.
+- **Desktop Background.** This is not a wallpaper and does not sit under
+  desktop icons. Clicks pass through; other windows cover the dashboard.
+  Restore from the tray.
+- **One GPU card on the dashboard.** Extra GPUs may be detected internally;
+  the main UI shows the first GPU.
+- **Motherboard sensors** are not enabled in this build.
 
-The installer creates Start menu and desktop shortcuts. It includes the
-Electron desktop runtime and a self-contained .NET hardware-monitoring service.
-The service starts and stops with the application.
+## How to use
 
-The community build is unsigned. Windows SmartScreen may therefore show an
-“unrecognized app” warning until future releases are code-signed.
+![Floating bar monitor](docs/screenshots/mini-monitor.png)
+
+### Read utilization
+
+On the full dashboard, large gauges are **load** or **capacity used** as a
+percentage:
+
+| Reading | Meaning |
+| --- | --- |
+| CPU LOAD | How busy the processor is right now |
+| GPU LOAD | How busy the graphics processor is right now |
+| RAM USED | Share of physical memory in use |
+| VRAM USED | Share of graphics memory in use |
+| CAPACITY USED | How full a fixed drive is, not how fast it is copying files |
+
+Bar and Mini show the same kinds of numbers in a compact row.
+
+### Read temperatures
+
+Temperatures appear in **°C** with a status of Normal, Warm, Hot, or
+Unavailable. You can change Warm/Hot thresholds in Settings → Temperature.
+
+**N/A** means “no sensor,” not “zero degrees” and not “safe.”
+
+### Switch display modes
+
+On the full dashboard, use the **Windowed / Full / Bar / Mini / Desktop**
+controls in the top bar. In a narrow window those choices appear in a
+dropdown.
+
+You can also right-click the tray icon and choose a mode.
+
+| Mode | What you get |
+| --- | --- |
+| Windowed | Resizable RGB dashboard |
+| Full | Maximized dashboard |
+| Bar | Horizontal overlay |
+| Mini | Same overlay family as Bar |
+| Desktop | Full dashboard behind other windows, no taskbar button |
+
+More detail: [Display modes](docs/DISPLAY_MODES.md).
+
+### Resize and move
+
+- **Windowed dashboard:** drag edges to resize. Drag the top header to move.
+  Double-click the header to maximize or restore.
+- **Bar / Mini:** drag the bar to move it, unless **Lock Position** is on.
+  Compact/normal size presets live in Settings → Display.
+
+### Pin, opacity, and Click-Through
+
+On Bar or Mini:
+
+1. **Pin** (pin icon) turns **Always on Top** on or off.
+2. Open the gear, then set **Overlay Opacity**.
+3. Enable **Click-Through** so clicks go to the game or app underneath.
+
+Click-Through makes the overlay itself unclickable. Turn it off from:
+
+- Tray → **Disable Click-Through**
+- **Ctrl+Shift+F10** (or the shortcut you selected in Settings)
+
+Settings for Click-Through apply to Bar and Mini after the settings panel
+closes.
+
+### Desktop Background
+
+Choose **Desktop** in the mode switch. This does not change your wallpaper.
+Open **Open Full Dashboard** from the tray when you want the normal window
+back.
+
+### Exit completely
+
+- If **Minimize to tray** is off, the window **Close** (X) exits.
+- If **Minimize to tray** is on, Close hides the window. Use the tray item
+  **Exit Application** to quit.
+
+![Desktop background mode](docs/screenshots/desktop-widget.png)
 
 ## System requirements
 
-- Windows 10 or Windows 11 x64
-- A supported x64 CPU
-- Current GPU and chipset/storage drivers
-- Approximately 350 MB free disk space
+Verified packaging target:
 
-Administrator access is not normally required. Some motherboard, NVMe, or
-vendor-restricted sensors may become available only when running elevated.
+| Item | What this project states |
+| --- | --- |
+| OS | Windows x64 installer. Development and packaging were done on **Windows 11 x64**. Other Windows versions are not claimed as tested here. |
+| CPU | 64-bit (x64) |
+| Installer | About **154 MB** (`Computer-Monitor-Dashboard-Setup.exe`) |
+| Disk | Plan several hundred MB for the installed Electron runtime, .NET runtime, and monitor service (the unpacked app payload is larger than the setup file) |
+| Admin | Not required to install or to run for basic CPU/RAM/GPU load |
+| GPU | Readings appear when LibreHardwareMonitor and the vendor driver expose them. NVIDIA was used on the development PC. |
+| Network | Not required for monitoring |
 
-## Privacy and security
+Included with the installer (you do not install these yourself):
 
-- Sensor data never leaves the computer.
-- The monitor binds only to a random `127.0.0.1` port.
-- Every launch uses a new cryptographically random authentication token.
-- The renderer has no Node.js access and runs with Electron context isolation.
-- No user account, API key, cloud service, or telemetry provider is used.
-
-## Hardware support
-
-Hardware is detected on every launch through Windows APIs and
-[LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor).
-Available readings depend on the specific device, firmware, driver, and
-permissions. A missing reading is explicitly reported as unavailable.
-
-The application intentionally excludes clock rates, fan speed, voltage, power,
-network throughput, storage transfer speed, and FPS.
+- Electron desktop runtime
+- Self-contained .NET 8 monitor service
+- LibreHardwareMonitor library
+- License and third-party notice files
 
 ## Troubleshooting
 
-- **A temperature shows N/A:** the device or driver does not expose that sensor.
-  This is different from a normal/cool reading.
-- **The dashboard remains on Starting:** allow `ComputerMonitor.Service.exe`
-  through endpoint-security software and restart the app.
-- **GPU readings are unavailable:** install the current vendor GPU driver.
-- **Additional storage sensors are needed:** try one elevated launch. Return to
-  normal-user mode if no additional readings appear.
-- **Click-through is on and the overlay cannot be clicked:** use the tray item
-  **Disable Click-Through**, or press **Ctrl+Shift+F10** (or the shortcut chosen
-  in Settings).
-- **An exclusive fullscreen game covers the overlay:** use borderless windowed
-  or borderless fullscreen. The overlay does not inject input into games.
-- **SmartScreen warns about the installer:** verify that the file came from this
-  repository’s Releases page.
+See **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** for:
+
+- N/A temperatures
+- Overlay hidden by games
+- Click-Through recovery
+- Off-screen windows
+- SmartScreen
+- Uninstall
+
+## Privacy
+
+Hardware readings stay on this computer. See **[PRIVACY.md](PRIVACY.md)**.
+
+## Disclaimer
+
+The software is provided **AS IS**. It is not a safety system and is not
+affiliated with Dell or Alienware. Read **[DISCLAIMER.md](DISCLAIMER.md)**
+before relying on any reading.
+
+## License
+
+Computer Monitor Dashboard is licensed under the [MIT License](LICENSE).
+
+Third-party components keep their own licenses. See
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Development
 
-Development requires Node.js 22, npm, and the .NET 8 SDK:
+For contributors. End users should use the installer above.
+
+Requires Node.js 22, npm, and the .NET 8 SDK:
 
 ```powershell
 npm run install:all
@@ -103,35 +246,11 @@ npm test
 npm run dev
 ```
 
-Create a local self-contained release:
+Local installer build:
 
 ```powershell
 npm run verify:version
 npm run build
 ```
 
-The installer is written to
-`artifacts\release\Computer-Monitor-Dashboard-Setup.exe`.
-
-## Publishing releases
-
-Version values in the root package, desktop package, and monitor project must
-match. After tests pass, push a semantic version tag such as `v1.0.0`. The
-release workflow rebuilds and retests the project before creating a GitHub
-Release and attaching the installer. See [Releasing](docs/RELEASING.md).
-
-Automatic installation is intentionally not implemented. Optional, user-driven
-GitHub Release notifications can be added later as described in
-[Updates](docs/UPDATES.md).
-
-Display mode behavior, click-through recovery, and the safe Windows desktop
-widget limitation are documented in [Display modes](docs/DISPLAY_MODES.md).
-
-## License
-
-Computer Monitor Dashboard is available under the [MIT License](LICENSE).
-Third-party components retain their own licenses; see
-[Third-party notices](THIRD_PARTY_NOTICES.md).
-
-This project is independent and is not affiliated with or endorsed by any
-computer hardware manufacturer.
+Output: `artifacts\release\Computer-Monitor-Dashboard-Setup.exe`.
