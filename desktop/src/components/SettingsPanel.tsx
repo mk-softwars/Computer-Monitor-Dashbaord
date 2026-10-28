@@ -18,17 +18,8 @@ const thresholdLabels: Record<string, string> = {
   ram: 'Memory modules',
 }
 
-const transparencyLevels = [
-  { label: 'High', percent: 75, opacity: .25 },
-  { label: 'Medium', percent: 50, opacity: .5 },
-  { label: 'Low', percent: 25, opacity: .75 },
-  { label: 'None', percent: 0, opacity: 1 },
-]
-
-function closestTransparencyOpacity(opacity: number) {
-  return transparencyLevels.reduce((closest, level) =>
-    Math.abs(level.opacity - opacity) < Math.abs(closest - opacity) ? level.opacity : closest,
-  transparencyLevels[0].opacity)
+function transparencyPercent(opacity: number) {
+  return Math.round((1 - Math.max(.2, Math.min(1, opacity))) * 100)
 }
 
 export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPanelProps) {
@@ -111,14 +102,15 @@ export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPan
               <option value="desktop">Desktop Background Widget</option>
             </select>
           </label>
-          <label className="setting-row">
-            <span><strong>Panel transparency</strong><small>Fades the glass background while keeping telemetry crisp</small></span>
-            <select value={closestTransparencyOpacity(draft.display.opacity)}
-              onChange={e => updateDisplay({ opacity: Number(e.target.value), panelTransparent: false })}>
-              {transparencyLevels.map(level =>
-                <option value={level.opacity} key={level.label}>{level.label} — {level.percent}%</option>)}
-            </select>
-            <output>{Math.round((1 - closestTransparencyOpacity(draft.display.opacity)) * 100)}%</output>
+          <label className="setting-row setting-row--slider">
+            <span><strong>Panel transparency</strong><small>0% is solid; 80% is highly see-through. Text stays readable.</small></span>
+            <input type="range" min="0" max="80" step="1" aria-label="Panel transparency"
+              value={transparencyPercent(draft.display.opacity)}
+              onChange={e => updateDisplay({
+                opacity: 1 - Number(e.target.value) / 100,
+                panelTransparent: false,
+              })} />
+            <output>{transparencyPercent(draft.display.opacity)}%</output>
           </label>
           <label className="setting-row setting-row--slider">
             <span><strong>Text size</strong><small>Scale compact telemetry values</small></span>
@@ -146,8 +138,10 @@ export function SettingsPanel({ value, onSave, onPreview, onClose }: SettingsPan
               onChange={e => updateDisplay({ locked: e.target.checked })} />
           </label>
           <label className="setting-row">
-            <span><strong>Click through</strong><small>Press Ctrl+Shift+F10 or use the tray to disable</small></span>
-            <input type="checkbox" checked={draft.display.clickThrough}
+            <span><strong>Click through</strong><small>Floating bar and mini monitor only. Press Ctrl+Shift+F10 to disable.</small></span>
+            <input type="checkbox"
+              checked={draft.display.clickThrough && (draft.display.mode === 'bar' || draft.display.mode === 'mini')}
+              disabled={draft.display.mode === 'full' || draft.display.mode === 'desktop'}
               onChange={e => updateDisplay({ clickThrough: e.target.checked }, false)} />
           </label>
           <label className="setting-row">

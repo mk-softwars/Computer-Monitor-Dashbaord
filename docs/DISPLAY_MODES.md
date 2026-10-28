@@ -3,10 +3,10 @@
 ## Full dashboard
 
 The standard responsive RGB dashboard shows all detected CPU, GPU, memory,
-VRAM, and storage readings. The custom title bar supports drag, minimize,
-maximize/restore, close-to-tray, and fullscreen. Drag the top header with the
-left mouse button to move the window. Widget position locking does not disable
-movement of the full dashboard.
+VRAM, and storage readings. Drag empty dashboard chrome or the top header to
+move the window. Cards and buttons stay clickable. Widget position locking
+does not disable movement of the full dashboard. The close button exits the
+app unless Minimize to tray is enabled.
 
 ## Floating bar monitor
 
@@ -25,11 +25,10 @@ opacity, locking, and always-on-top remain available.
 Right-click the widget or use the system tray to change mode, opacity,
 always-on-top, lock, click-through, or exit the application.
 
-The Display Mode settings include clear **Panel transparency** percentages:
-None (0%), Low (25%), Medium (50%), and High (75%). Only the glass panel
-background fades, so telemetry labels and values remain crisp and readable.
-Selecting a level disables the conflicting text-only override. Text-only mode
-remains available when the panel background should be removed completely.
+The Display Mode settings include a **Panel transparency** slider from 0%
+(solid) to 80% (highly see-through). Only the glass panel background fades,
+so telemetry labels and values remain crisp. Text-only mode remains available
+when the panel background should be removed completely.
 
 ## Desktop background widget
 
@@ -50,14 +49,11 @@ Locking it or enabling click-through prevents accidental focus afterward.
 
 ## Click-through recovery
 
-When click-through is enabled, input passes to windows below the widget.
-It takes effect after **Save settings**. The Settings button remains interactive
-and opens an interactive settings panel; all other widget regions continue to
-pass clicks through. Click-through is limited to widget modes; the full
-dashboard and all of its controls remain interactive. Disable click-through
-from Settings, the tray menu, or
-press **Ctrl+Shift+F10**. The shortcut also unlocks and shows the widget, so
-settings and Exit always remain accessible.
+When click-through is enabled on the floating bar or mini monitor, input
+passes to windows below the overlay. It takes effect after **Save settings**.
+The Settings button remains interactive. Click-through is never applied to the
+full dashboard or desktop widget. Disable it from Settings, the tray menu, or
+press **Ctrl+Shift+F10**. The shortcut also unlocks and shows the window.
 
 ## Persistence and disconnected monitors
 

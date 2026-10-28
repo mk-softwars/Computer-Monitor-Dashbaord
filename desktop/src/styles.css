@@ -23,6 +23,7 @@ button { color: inherit; }
   padding: 24px clamp(20px, 2.2vw, 42px) 36px;
   position: relative;
   overflow: hidden;
+  -webkit-app-region: drag;
   background:
     radial-gradient(circle at 18% 10%, rgb(0 92 255 / calc(var(--rgb-intensity) * .18)), transparent 30%),
     radial-gradient(circle at 84% 23%, rgb(161 42 255 / calc(var(--rgb-intensity) * .18)), transparent 34%),
@@ -94,6 +95,9 @@ button { color: inherit; }
 @keyframes pulse { 50% { opacity: .35; box-shadow: 0 0 18px 5px var(--cyan); } }
 
 .hero-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(16px, 1.5vw, 28px); }
+.hardware-card, .compact-card, .core-panel, .sensor-note, .settings-backdrop {
+  -webkit-app-region: no-drag;
+}
 .hardware-card, .compact-card, .core-panel {
   position: relative;
   border: 1px solid transparent;

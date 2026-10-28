@@ -63,7 +63,6 @@ export default function App() {
     : '--:--:--', [snapshot])
 
   useEffect(() => {
-    void window.computerMonitor?.setFullscreen(settings.fullscreen)
     void window.computerMonitor?.setTrayEnabled(settings.showTrayIcon)
       .then(() => window.computerMonitor?.setMinimizeToTray(settings.minimizeToTray))
     const syncDisplay = (display: DisplayState) => setSettings(current => {
@@ -71,9 +70,17 @@ export default function App() {
       localStorage.setItem('computer-monitor-settings', JSON.stringify(next))
       return next
     })
-    void window.computerMonitor?.getDisplayState().then(syncDisplay)
+    void window.computerMonitor?.getDisplayState().then(display => {
+      syncDisplay(display)
+      if (settings.fullscreen && display.mode === 'full') {
+        void window.computerMonitor?.setFullscreen(true)
+      }
+    })
     const stopDisplayListener = window.computerMonitor?.onDisplayStateChanged(syncDisplay)
-    const stopSettingsListener = window.computerMonitor?.onOpenSettings(() => setSettingsOpen(true))
+    const stopSettingsListener = window.computerMonitor?.onOpenSettings(() => {
+      void window.computerMonitor?.setDisplayState({ clickThrough: false })
+      setSettingsOpen(true)
+    })
     return () => {
       stopDisplayListener?.()
       stopSettingsListener?.()
@@ -83,7 +90,8 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (!settings.display.clickThrough) {
+    const overlay = settings.display.mode === 'bar' || settings.display.mode === 'mini'
+    if (!overlay || !settings.display.clickThrough) {
       window.computerMonitor?.setPointerPassthrough(false)
       return
     }
@@ -153,7 +161,7 @@ export default function App() {
   if (settings.display.mode !== 'full') {
     return <MiniMonitor snapshot={snapshot} state={state} settings={settings}
       style={displayStyle} onOpenSettings={() => {
-        void window.computerMonitor?.setDisplayState({ mode: 'full' })
+        void window.computerMonitor?.setDisplayState({ mode: 'full', clickThrough: false })
         setSettingsOpen(true)
       }}
       settingsPanel={settingsOpen

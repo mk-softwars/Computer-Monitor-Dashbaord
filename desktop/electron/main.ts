@@ -19,6 +19,9 @@ let fullscreenActive = false
 let preFullscreenBounds: Rectangle | null = null
 const sessionToken = randomBytes(32).toString('hex')
 
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) app.quit()
+
 app.setAppUserModelId('app.computermonitor.dashboard')
 
 type DisplayMode = 'full' | 'bar' | 'mini' | 'desktop'
@@ -76,6 +79,10 @@ function loadDisplayState() {
       mode: stored.launchLastMode === false ? 'full' : storedMode ?? 'full',
       bounds,
     }
+    displayState.bounds = Object.fromEntries(Object.entries(displayState.bounds).map(([mode, value]) => (
+      [mode, value ? sanitizeBounds(mode as DisplayMode, value) : value]
+    ))) as DisplayState['bounds']
+    if (!overlayMode(displayState.mode)) displayState.clickThrough = false
   } catch {
     displayState = structuredClone(defaultDisplayState)
   }
@@ -106,6 +113,25 @@ function minimumSize(mode: DisplayMode) {
   return { width: 680, height: 68 }
 }
 
+function overlayMode(mode: DisplayMode) {
+  return mode === 'bar' || mode === 'mini'
+}
+
+function compactMode(mode: DisplayMode) {
+  return overlayMode(mode) || mode === 'desktop'
+}
+
+function sanitizeBounds(mode: DisplayMode, bounds: WindowBounds) {
+  const safe = safeBounds(bounds)
+  if (!compactMode(mode)) return safe
+  const limits = mode === 'mini'
+    ? { width: 800, height: 90 }
+    : { width: 1200, height: 140 }
+  if (safe.width <= limits.width && safe.height <= limits.height) return safe
+  const preset = presetBounds(mode)
+  return safeBounds({ ...preset, x: safe.x, y: safe.y })
+}
+
 function safeBounds(bounds: WindowBounds) {
   const displays = screen.getAllDisplays()
   const intersects = displays.some(({ workArea }) => {
@@ -133,7 +159,7 @@ function showDashboard() {
 
 function setPointerPassthrough(passthrough: boolean) {
   if (!mainWindow) return
-  const ignoreMouse = displayState.mode !== 'full' && displayState.clickThrough && passthrough
+  const ignoreMouse = overlayMode(displayState.mode) && displayState.clickThrough && passthrough
   mainWindow.setIgnoreMouseEvents(ignoreMouse, { forward: true })
   mainWindow.setFocusable(!ignoreMouse)
 }
@@ -191,10 +217,11 @@ function buildControlMenu() {
     {
       label: 'Transparency',
       submenu: [
-        { label: 'High — 75%', opacity: .25 },
-        { label: 'Medium — 50%', opacity: .5 },
-        { label: 'Low — 25%', opacity: .75 },
-        { label: 'None — 0%', opacity: 1 },
+        { label: '80%', opacity: .2 },
+        { label: '75%', opacity: .25 },
+        { label: '50%', opacity: .5 },
+        { label: '25%', opacity: .75 },
+        { label: '0%', opacity: 1 },
       ].map(level => ({
         label: level.label,
         type: 'radio' as const,
@@ -235,6 +262,7 @@ function applyDisplayState(patch: Partial<Omit<DisplayState, 'bounds'>>) {
     opacity: Math.max(.2, Math.min(1, patch.opacity ?? displayState.opacity)),
     textScale: Math.max(70, Math.min(160, patch.textScale ?? displayState.textScale)),
   }
+  if (!overlayMode(displayState.mode)) displayState.clickThrough = false
   if (displayState.clickThrough) setTrayEnabled(true)
   if (!mainWindow) {
     saveDisplayState()
@@ -242,24 +270,25 @@ function applyDisplayState(patch: Partial<Omit<DisplayState, 'bounds'>>) {
   }
 
   if (patch.mode && patch.mode !== previousMode) {
-    const bounds = safeBounds(displayState.bounds[patch.mode] ?? presetBounds(patch.mode))
+    const bounds = sanitizeBounds(patch.mode, displayState.bounds[patch.mode] ?? presetBounds(patch.mode))
     applyingBounds = true
     mainWindow.setBounds(bounds)
     applyingBounds = false
+    displayState.bounds[patch.mode] = bounds
   }
   const isFull = displayState.mode === 'full'
   const isDesktop = displayState.mode === 'desktop'
   if (!isFull && fullscreenActive) void setWindowFullscreen(false)
   const minimum = minimumSize(displayState.mode)
-  const positionLocked = !isFull && displayState.locked
+  const positionLocked = compactMode(displayState.mode) && displayState.locked
   mainWindow.setMinimumSize(minimum.width, minimum.height)
-  mainWindow.setResizable(!positionLocked)
+  mainWindow.setResizable(isFull || !positionLocked)
   mainWindow.setMovable(!positionLocked)
   mainWindow.setAlwaysOnTop(!isDesktop && displayState.alwaysOnTop, 'floating')
   mainWindow.setSkipTaskbar(isDesktop)
   // Transparency is rendered on the panel background so telemetry text remains crisp.
   mainWindow.setOpacity(1)
-  setPointerPassthrough(displayState.clickThrough)
+  setPointerPassthrough(false)
   if (process.platform === 'win32') {
     mainWindow.setBackgroundMaterial(displayState.glassBlur ? 'acrylic' : 'none')
   }
@@ -323,7 +352,7 @@ function startMonitor() {
 }
 
 function createWindow() {
-  const initialBounds = safeBounds(displayState.bounds[displayState.mode] ?? presetBounds(displayState.mode))
+  const initialBounds = sanitizeBounds(displayState.mode, displayState.bounds[displayState.mode] ?? presetBounds(displayState.mode))
   mainWindow = new BrowserWindow({
     ...initialBounds,
     minWidth: minimumSize(displayState.mode).width,
@@ -343,7 +372,7 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     applyDisplayState({})
-    const targetBounds = safeBounds(displayState.bounds[displayState.mode] ?? presetBounds(displayState.mode))
+    const targetBounds = sanitizeBounds(displayState.mode, displayState.bounds[displayState.mode] ?? presetBounds(displayState.mode))
     applyingBounds = true
     mainWindow?.setBounds(targetBounds)
     applyingBounds = false
@@ -359,7 +388,7 @@ function createWindow() {
   mainWindow.on('enter-full-screen', () => { fullscreenActive = true })
   mainWindow.on('leave-full-screen', () => { fullscreenActive = false })
   mainWindow.on('close', (event) => {
-    if (quitting || !trayEnabled) return
+    if (quitting || !trayEnabled || !minimizeToTray) return
     event.preventDefault()
     mainWindow?.hide()
   })
@@ -389,7 +418,7 @@ function createWindow() {
 
 function persistCurrentBounds() {
   if (!mainWindow || !windowReady || applyingBounds || mainWindow.isMaximized() || fullscreenActive) return
-  const bounds = mainWindow.getBounds()
+  const bounds = sanitizeBounds(displayState.mode, mainWindow.getBounds())
   displayState.bounds[displayState.mode] = bounds
   const preset = sizePresetBounds(displayState.mode, displayState.sizePreset === 'compact' ? 'compact' : 'normal')
   const matchesPreset = displayState.sizePreset !== 'custom' &&
@@ -467,7 +496,7 @@ ipcMain.handle('display:setSizePreset', (_event, preset: 'compact' | 'normal') =
   if (!mainWindow) return null
   const size = sizePresetBounds(displayState.mode, preset)
   const current = mainWindow.getBounds()
-  const bounds = safeBounds({ ...current, ...size })
+  const bounds = sanitizeBounds(displayState.mode, { ...current, ...size })
   applyingBounds = true
   mainWindow.setBounds(bounds)
   applyingBounds = false
@@ -476,13 +505,18 @@ ipcMain.handle('display:setSizePreset', (_event, preset: 'compact' | 'normal') =
   return bounds
 })
 
+app.on('second-instance', () => {
+  applyDisplayState({ clickThrough: false })
+  showDashboard()
+})
+
 app.whenReady().then(() => {
   loadDisplayState()
   setTrayEnabled(true)
   startMonitor()
   createWindow()
   globalShortcut.register('CommandOrControl+Shift+F10', () => {
-    applyDisplayState({ clickThrough: false, locked: false })
+    applyDisplayState({ clickThrough: false, locked: false, mode: displayState.mode === 'desktop' ? 'full' : displayState.mode })
     showDashboard()
   })
 })
