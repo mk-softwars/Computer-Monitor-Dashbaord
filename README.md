@@ -5,7 +5,7 @@ GPU, RAM, VRAM, and storage **usage percentages**, plus **temperatures when
 the hardware actually exposes them**. Missing sensors are shown as **N/A**.
 Values are not invented.
 
-![Computer Monitor Dashboard](docs/screenshots/dashboard.png)
+![Full RGB dashboard](docs/screenshots/dashboard.jpg)
 
 ## Download for Windows
 
@@ -106,8 +106,6 @@ speed, disk transfer rate, or FPS.
 
 ## How to use
 
-![Floating bar monitor](docs/screenshots/mini-monitor.png)
-
 ### Read utilization
 
 On the full dashboard, large gauges are **load** or **capacity used** as a
@@ -182,8 +180,6 @@ back.
 - If **Minimize to tray** is off, the window **Close** (X) exits.
 - If **Minimize to tray** is on, Close hides the window. Use the tray item
   **Exit Application** to quit.
-
-![Desktop background mode](docs/screenshots/desktop-widget.png)
 
 ## System requirements
 
