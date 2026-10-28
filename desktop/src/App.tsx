@@ -2,30 +2,21 @@ import { Cpu, Database, Expand, Gauge, LayoutDashboard, Maximize2, MemoryStick, 
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { NeonGauge } from './components/NeonGauge'
 import { OverlayBar } from './components/OverlayBar'
-import { defaultAppSettings, SettingsPanel } from './components/SettingsPanel'
+import { normalizeAppSettings, SettingsPanel } from './components/SettingsPanel'
 import { ThermalStatus } from './components/ThermalStatus'
 import { useDashboardLayout } from './hooks/useDashboardLayout'
 import { useTelemetry, type ConnectionState } from './hooks/useTelemetry'
 import { formatMbps } from './networkFormat'
-import { applyTheme, normalizeTheme } from './theme'
+import { applyTheme } from './theme'
 import type { AppSettings, DisplayState, ThermalState } from './types'
 
 function loadSettings(): AppSettings {
   try {
     const stored = localStorage.getItem('computer-monitor-settings')
-    if (!stored) return defaultAppSettings()
-    const parsed = JSON.parse(stored) as Partial<AppSettings>
-    const defaults = defaultAppSettings()
-    return {
-      ...defaults,
-      ...parsed,
-      theme: normalizeTheme(parsed.theme),
-      display: { ...defaults.display, ...parsed.display },
-      thresholds: { ...defaults.thresholds, ...parsed.thresholds },
-      network: { ...defaults.network, ...parsed.network },
-    }
+    if (!stored) return normalizeAppSettings()
+    return normalizeAppSettings(JSON.parse(stored) as Partial<AppSettings>)
   } catch {
-    return defaultAppSettings()
+    return normalizeAppSettings()
   }
 }
 
@@ -99,13 +90,13 @@ export default function App() {
       body: JSON.stringify({
         refreshIntervalMs: settings.refreshIntervalMs,
         thresholds: settings.thresholds,
-        networkEnabled: settings.network.enabled,
-        networkAdapterId: settings.network.adapterId,
+        networkEnabled: settings.network?.enabled !== false,
+        networkAdapterId: settings.network?.adapterId ?? null,
       }),
     }).catch(() => {
       // The WebSocket reconnect loop reports service availability.
     })
-  }, [connection, settings.refreshIntervalMs, settings.thresholds, settings.network.enabled, settings.network.adapterId])
+  }, [connection, settings.refreshIntervalMs, settings.thresholds, settings.network?.enabled, settings.network?.adapterId])
 
   const openSettings = async () => {
     window.computerMonitor?.setPointerPassthrough(false)
@@ -120,8 +111,7 @@ export default function App() {
 
   const saveSettings = useCallback(async (next: AppSettings) => {
     let validated: AppSettings = {
-      ...next,
-      theme: normalizeTheme(next.theme),
+      ...normalizeAppSettings(next),
       refreshIntervalMs: Math.max(500, Math.min(10000, next.refreshIntervalMs)),
       uiScale: 100,
       minimizeToTray: next.showTrayIcon && next.minimizeToTray,
@@ -151,8 +141,8 @@ export default function App() {
           body: JSON.stringify({
             refreshIntervalMs: validated.refreshIntervalMs,
             thresholds: validated.thresholds,
-            networkEnabled: validated.network.enabled,
-            networkAdapterId: validated.network.adapterId,
+            networkEnabled: validated.network?.enabled !== false,
+            networkAdapterId: validated.network?.adapterId ?? null,
           }),
         })
       } catch {
@@ -247,7 +237,7 @@ export default function App() {
         </HardwareCard>
       </section>
 
-      <section className="secondary-grid" aria-label="Memory and storage">
+      <section className="secondary-grid" aria-label="Memory, storage, and network">
         <CompactCard title="SYSTEM MEMORY" subtitle="Physical RAM" icon={<MemoryStick />} tone="cyan">
           <NeonGauge value={snapshot?.memory.usagePercent ?? null} label="RAM USED" tone="cyan" size="small" theme={settings.theme} />
           <ThermalStatus value={snapshot?.memory.temperatureCelsius ?? null}
@@ -257,6 +247,33 @@ export default function App() {
           <NeonGauge value={gpu?.vramUsagePercent ?? null} label="VRAM USED" tone="purple" size="small" theme={settings.theme} />
           <div className="availability"><span>GPU sensor</span><strong>{gpu ? 'DETECTED' : 'N/A'}</strong></div>
         </CompactCard>
+        {settings.network?.enabled !== false && (
+          <CompactCard title="NETWORK" subtitle={snapshot?.network?.adapterName
+            ? `${snapshot.network.adapterKind ?? 'Adapter'} · ${snapshot.network.adapterName}`
+            : 'Detecting adapter…'} icon={<Wifi />} tone="blue">
+            <div className="network-speeds" aria-label="Network speeds">
+              {settings.network?.showDownload !== false && (
+                <div className="network-speeds__row">
+                  <span>Download</span>
+                  <strong>{formatMbps(snapshot?.network?.downloadMbps)}</strong>
+                </div>
+              )}
+              {settings.network?.showUpload !== false && (
+                <div className="network-speeds__row">
+                  <span>Upload</span>
+                  <strong>{formatMbps(snapshot?.network?.uploadMbps)}</strong>
+                </div>
+              )}
+              {settings.network?.showDownload === false && settings.network?.showUpload === false && (
+                <div className="availability"><span>Metrics</span><strong>Hidden</strong></div>
+              )}
+            </div>
+            <div className="availability">
+              <span>Interface</span>
+              <strong>{snapshot?.network?.adapterKind ?? 'N/A'}</strong>
+            </div>
+          </CompactCard>
+        )}
         {snapshot?.storage.map(drive => (
           <CompactCard key={drive.id} title={`${drive.kind} STORAGE`} subtitle={`${drive.name} · ${drive.driveLetters}`} icon={<Database />} tone="violet">
             <NeonGauge value={drive.usedPercent} label="CAPACITY USED" tone="violet" size="small" theme={settings.theme} />
@@ -267,33 +284,6 @@ export default function App() {
           <CompactCard title="STORAGE" subtitle="Detecting fixed drives…" icon={<Database />} tone="violet">
             <NeonGauge value={null} label="CAPACITY USED" tone="violet" size="small" theme={settings.theme} />
             <ThermalStatus value={null} state="unavailable" />
-          </CompactCard>
-        )}
-        {settings.network.enabled && (
-          <CompactCard title="NETWORK" subtitle={snapshot?.network?.adapterName
-            ? `${snapshot.network.adapterKind ?? 'Adapter'} · ${snapshot.network.adapterName}`
-            : 'Detecting adapter…'} icon={<Wifi />} tone="blue">
-            <div className="network-speeds" aria-label="Network speeds">
-              {settings.network.showDownload && (
-                <div className="network-speeds__row">
-                  <span>Download</span>
-                  <strong>{formatMbps(snapshot?.network?.downloadMbps)}</strong>
-                </div>
-              )}
-              {settings.network.showUpload && (
-                <div className="network-speeds__row">
-                  <span>Upload</span>
-                  <strong>{formatMbps(snapshot?.network?.uploadMbps)}</strong>
-                </div>
-              )}
-              {!settings.network.showDownload && !settings.network.showUpload && (
-                <div className="availability"><span>Metrics</span><strong>Hidden</strong></div>
-              )}
-            </div>
-            <div className="availability">
-              <span>Interface</span>
-              <strong>{snapshot?.network?.adapterKind ?? 'N/A'}</strong>
-            </div>
           </CompactCard>
         )}
       </section>

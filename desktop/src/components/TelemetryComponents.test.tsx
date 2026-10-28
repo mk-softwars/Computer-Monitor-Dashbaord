@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import type { TelemetrySnapshot } from '../types'
 import { OverlayBar } from './OverlayBar'
 import { NeonGauge } from './NeonGauge'
-import { defaultAppSettings, SettingsPanel } from './SettingsPanel'
+import { defaultAppSettings, normalizeAppSettings, SettingsPanel } from './SettingsPanel'
 import { ThermalStatus } from './ThermalStatus'
 
 const settings = defaultAppSettings()
@@ -106,6 +106,15 @@ describe('telemetry components', () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
       network: expect.objectContaining({ adapterId: 'nic-1', showInBar: true, enabled: true }),
     }))
+  })
+
+  it('enables full-dashboard network monitoring when older settings omit the network key', () => {
+    const restored = normalizeAppSettings({ refreshIntervalMs: 1000 } as Partial<typeof settings>)
+    expect(restored.network.enabled).toBe(true)
+    expect(restored.network.showDownload).toBe(true)
+    expect(restored.network.showUpload).toBe(true)
+    expect(restored.network.showInBar).toBe(false)
+    expect(restored.network.showInMini).toBe(false)
   })
 
   it('defaults to Original RGB and applies a selected theme from Appearance', async () => {

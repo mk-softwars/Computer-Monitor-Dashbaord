@@ -156,7 +156,7 @@ API for that, and this app does not modify Explorer.
 
 ## Windows security warnings
 
-Current community builds, including **v1.1.0**, are **unsigned**. SmartScreen
+Current community builds, including **v1.1.1**, are **unsigned**. SmartScreen
 or another filter may label them as unrecognized. **v1.0.0** remains on GitHub
 Releases.
 

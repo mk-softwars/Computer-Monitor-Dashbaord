@@ -14,7 +14,7 @@ interface SettingsPanelProps {
   onResetLayout(): void
 }
 
-const APP_VERSION = '1.1.0'
+const APP_VERSION = '1.1.1'
 const categories = [
   { id: 'general', label: 'General' },
   { id: 'display', label: 'Display' },
@@ -81,6 +81,25 @@ export function defaultAppSettings(): AppSettings {
       showUpload: true,
       showInBar: false,
       showInMini: false,
+    },
+  }
+}
+
+export function normalizeAppSettings(partial?: Partial<AppSettings> | null): AppSettings {
+  const defaults = defaultAppSettings()
+  if (!partial) return defaults
+  const network = { ...defaults.network, ...partial.network }
+  return {
+    ...defaults,
+    ...partial,
+    theme: normalizeTheme(partial.theme),
+    display: { ...defaults.display, ...partial.display },
+    thresholds: { ...defaults.thresholds, ...partial.thresholds },
+    network: {
+      ...network,
+      enabled: network.enabled !== false,
+      showDownload: network.showDownload !== false,
+      showUpload: network.showUpload !== false,
     },
   }
 }

@@ -168,7 +168,7 @@ html.overlay-shell, html.overlay-shell body, html.overlay-shell #root {
 .metric-line, .availability { display: flex; justify-content: space-between; align-items: center; padding: 8px 3px; border-bottom: 1px solid rgb(100 128 167 / .12); color: #71849f; font: 500 11px Rajdhani; letter-spacing: .08em; text-transform: uppercase; }
 .metric-line strong, .availability strong { color: #c6d5e8; font-family: Bahnschrift, "Segoe UI Variable Display", sans-serif; font-size: 13px; font-variant-numeric: tabular-nums; }
 
-.secondary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 1.3vw, 22px); margin-top: 20px; }
+.secondary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(14px, 1.3vw, 22px); margin-top: 20px; }
 .compact-card { min-height: 225px; border-radius: 16px; padding: 20px; }
 .compact-card--cyan { --compact: var(--cyan); }
 .compact-card--purple { --compact: var(--pink); }
@@ -436,6 +436,9 @@ html.is-hidden .app::after, html.is-hidden .ambient { display: none; }
   }
 }
 
+@container dashboard (max-width: 1400px) {
+  .secondary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 @container dashboard (max-width: 1250px) {
   .hardware-card__body { grid-template-columns: minmax(180px, 210px) minmax(0, 1fr); }
   .secondary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

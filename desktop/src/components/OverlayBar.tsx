@@ -36,15 +36,16 @@ export function OverlayBar({
   const drive = snapshot?.storage[0]
   const display = settings.display
   const storageLabel = drive?.kind === 'HDD' ? 'HDD' : 'SSD'
-  const showNetwork = settings.network.enabled && (
-    (display.mode === 'bar' && settings.network.showInBar)
-    || (display.mode === 'mini' && settings.network.showInMini)
+  const network = settings.network
+  const showNetwork = network?.enabled !== false && (
+    (display.mode === 'bar' && network?.showInBar)
+    || (display.mode === 'mini' && network?.showInMini)
   )
   const networkSpeed = compactSpeed(
     snapshot?.network?.downloadMbps,
     snapshot?.network?.uploadMbps,
-    settings.network.showDownload,
-    settings.network.showUpload,
+    network?.showDownload !== false,
+    network?.showUpload !== false,
   )
   const groups = [
     {

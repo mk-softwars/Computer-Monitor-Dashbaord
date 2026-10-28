@@ -34,8 +34,8 @@ tests, publishes the self-contained monitor, builds the installer, checks the
 packaged backend and license notices, and only then creates the GitHub Release.
 
 If any step fails, no release is published. Delete a bad local tag before
-reusing it; do not overwrite an existing public release tag. Never retag or
-replace GitHub Release **v1.0.0**.
+reusing it; do not overwrite an existing public release tag. Never retag,
+replace, or delete published GitHub Releases such as **v1.0.0**.
 
 ## Code signing
 

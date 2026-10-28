@@ -36,7 +36,7 @@ the desktop app and a self-contained hardware-monitoring service.
 
 ### Windows security prompts
 
-Current community builds, including **v1.1.0**, are **unsigned**. Windows
+Current community builds, including **v1.1.1**, are **unsigned**. Windows
 SmartScreen or another filter may say the app is unrecognized. The earlier
 **v1.0.0** installer remains available on GitHub Releases.
 
