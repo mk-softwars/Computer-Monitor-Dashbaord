@@ -121,7 +121,7 @@ button { color: inherit; }
 .gauge__track { stroke: rgb(91 116 160 / .12); }
 .gauge__progress { stroke-linecap: round; transition: stroke-dashoffset .8s cubic-bezier(.22, .8, .25, 1); }
 .gauge__content { position: absolute; inset: 0; display: flex; align-items: baseline; justify-content: center; align-content: center; flex-wrap: wrap; }
-.gauge__content strong { font: 600 clamp(48px, 4vw, 70px)/.9 Rajdhani; text-shadow: 0 0 25px color-mix(in srgb, var(--gauge-color), transparent 45%); }
+.gauge__content strong { font: 600 clamp(48px, 4vw, 70px)/.9 Bahnschrift, "Segoe UI Variable Display", sans-serif; font-variant-numeric: tabular-nums; text-shadow: 0 0 25px color-mix(in srgb, var(--gauge-color), transparent 45%); }
 .gauge__unit { font: 600 20px Rajdhani; color: #8095b1; }
 .gauge__content small { flex-basis: 100%; text-align: center; margin-top: 8px; font: 700 10px Rajdhani; letter-spacing: .2em; color: #617795; }
 .gauge--small .gauge__content strong { font-size: 39px; }
@@ -133,7 +133,7 @@ button { color: inherit; }
 .thermal > svg { color: #8293aa; }
 .thermal div { display: grid; }
 .thermal span { color: #617795; font: 600 9px Rajdhani; letter-spacing: .12em; text-transform: uppercase; }
-.thermal strong { margin-top: 2px; font: 600 25px Rajdhani; }
+.thermal strong { margin-top: 2px; font: 600 25px Bahnschrift, "Segoe UI Variable Display", sans-serif; font-variant-numeric: tabular-nums; }
 .thermal small { font: 700 9px Rajdhani; letter-spacing: .13em; color: #778aa4; }
 .thermal--normal { border-color: rgb(0 223 255 / .2); box-shadow: inset 0 0 20px rgb(0 223 255 / .035); }
 .thermal--normal > svg, .thermal--normal small { color: var(--cyan); }
@@ -143,7 +143,7 @@ button { color: inherit; }
 .thermal--hot > svg, .thermal--hot small { color: #ff2a68; }
 @keyframes warning { 50% { border-color: rgb(255 42 104 / .9); } }
 .metric-line, .availability { display: flex; justify-content: space-between; align-items: center; padding: 8px 3px; border-bottom: 1px solid rgb(100 128 167 / .12); color: #71849f; font: 500 11px Rajdhani; letter-spacing: .08em; text-transform: uppercase; }
-.metric-line strong, .availability strong { color: #c6d5e8; font-size: 13px; }
+.metric-line strong, .availability strong { color: #c6d5e8; font-family: Bahnschrift, "Segoe UI Variable Display", sans-serif; font-size: 13px; font-variant-numeric: tabular-nums; }
 
 .secondary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 1.3vw, 22px); margin-top: 20px; }
 .compact-card { min-height: 225px; border-radius: 16px; padding: 20px; }
@@ -163,7 +163,7 @@ button { color: inherit; }
 .core { display: grid; grid-template-columns: 24px 1fr 35px; align-items: center; gap: 8px; color: #607794; font: 600 9px Rajdhani; }
 .core > div { height: 4px; border-radius: 4px; background: rgb(82 107 145 / .18); overflow: hidden; }
 .core i { display: block; height: 100%; background: linear-gradient(90deg, var(--blue), var(--cyan)); box-shadow: 0 0 10px var(--cyan); transition: width .8s ease; }
-.core strong { color: #9fb1c9; text-align: right; font-size: 10px; }
+.core strong { color: #9fb1c9; text-align: right; font-family: Bahnschrift, "Segoe UI Variable Display", sans-serif; font-size: 10px; font-variant-numeric: tabular-nums; }
 .sensor-note { margin-top: 14px; padding: 10px 14px; color: #647892; font-size: 10px; line-height: 1.5; border-left: 2px solid rgb(255 123 40 / .5); background: rgb(255 123 40 / .025); }
 
 .settings-backdrop { position: fixed; z-index: 20; inset: 0; display: flex; justify-content: flex-end; background: rgb(1 1 8 / .72); backdrop-filter: blur(10px); }
